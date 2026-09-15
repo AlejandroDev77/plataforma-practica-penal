@@ -1,0 +1,13 @@
+.composer-cache/
+.idea/
+.vscode/
+*.log
+
+ai-service/.env
+ai-service/.pytest_cache/
+ai-service/.ruff_cache/
+ai-service/.venv/
+ai-service/**/__pycache__/
+
+README.md
+simulador_juridico_ia_arquitectura.md

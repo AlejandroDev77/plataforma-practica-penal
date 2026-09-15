@@ -1,0 +1,14 @@
+import { useState } from 'react'
+import { ShieldCheck, Check } from 'lucide-react'
+import { toast } from 'sonner'
+import { PageHeading } from '../../components/ui/AdminUi'
+
+const roles = [{ name: 'Administrador', detail: 'Gestión integral del espacio institucional.' }, { name: 'Instructor', detail: 'Preparación de expedientes y sesiones académicas.' }, { name: 'Revisor', detail: 'Revisión del archivo y recursos de formación.' }, { name: 'Estudiante', detail: 'Consulta de recursos y participación en prácticas.' }]
+const permissions = ['Consultar expedientes', 'Crear y editar expedientes', 'Revisar documentación', 'Administrar biblioteca', 'Programar audiencias', 'Gestionar usuarios', 'Modificar configuración', 'Consultar actividad']
+const initial = [[true, true, true, true, true, true, true, true], [true, true, true, false, true, false, false, true], [true, false, true, true, false, false, false, true], [true, false, false, false, false, false, false, false]]
+export function RolesPage() {
+  const [selected, setSelected] = useState(0)
+  const [matrix, setMatrix] = useState(initial)
+  const [saved, setSaved] = useState(initial)
+  return <><PageHeading eyebrow="Administración" title="Roles y permisos" description="Defina el alcance de cada perfil dentro de la institución." /><div className="roles-grid">{roles.map((role, index) => <button className={`role-card ${selected === index ? 'selected' : ''}`} key={role.name} onClick={() => setSelected(index)}><span className="role-icon"><ShieldCheck size={21} /></span><h2>{role.name}</h2><p>{role.detail}</p><span className="role-count">{matrix[index].filter(Boolean).length} permisos habilitados {selected === index && <Check size={15} />}</span></button>)}</div><section className="panel"><div className="panel-heading"><div><p className="eyebrow">MATRIZ DE ACCESO</p><h2>{roles[selected].name}</h2></div><span className="demo-tag">VISTA DE DEMOSTRACIÓN</span></div><div className="permissions-list">{permissions.map((permission, index) => <label className="permission-row" key={permission}><span><strong>{permission}</strong><small>{index < 5 ? 'Gestión académica' : 'Administración institucional'}</small></span><input type="checkbox" checked={matrix[selected][index]} disabled={selected === 0} onChange={(e) => setMatrix(matrix.map((row, ri) => ri === selected ? row.map((value, ci) => ci === index ? e.target.checked : value) : row))} /></label>)}</div><div className="settings-actions"><p className="muted text-small">{selected === 0 ? 'El perfil administrador mantiene acceso completo.' : 'Los permisos de esta vista no aplican seguridad real.'}</p><button className="btn btn-secondary" onClick={() => setMatrix(saved)}>Descartar</button><button className="btn btn-primary" onClick={() => { setSaved(matrix.map((row) => [...row])); toast.success('Permisos guardados en esta demostración') }}>Guardar permisos</button></div></section></>
+}
