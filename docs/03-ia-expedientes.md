@@ -1,6 +1,6 @@
 # IA de expedientes
 
-Estado: la fase local de extracción está implementada. PDF, DOCX e imágenes se procesan en una cola de Laravel mediante el servicio interno FastAPI. Las pruebas automáticas usan documentos sintéticos. En este equipo todavía falta instalar Tesseract y su modelo español para verificar OCR real de escaneos.
+Estado: la fase de extracción está integrada en `develop` mediante PR #4. PDF, DOCX e imágenes se procesan en una cola de Laravel mediante el servicio interno FastAPI. Las pruebas automáticas usan documentos sintéticos. En este equipo todavía falta instalar Tesseract y su modelo español para verificar OCR real de escaneos.
 
 ## Alcance implementado
 
@@ -38,9 +38,18 @@ Desde `ai-service/`, instalar las dependencias del módulo y de desarrollo:
 
 Configurar un `SERVICE_TOKEN` aleatorio en `ai-service/.env` y copiar el mismo valor a `INTELLIGENCE_SERVICE_TOKEN` en `backend/.env`. Para OCR, `OCR_LANGUAGE=spa+eng`; si Tesseract no detecta su directorio, definir `OCR_TESSDATA_PATH`. Luego, en otra terminal desde `backend/`, arrancar el worker indicado arriba. Los secretos quedan solo en archivos `.env` locales.
 
-## Análisis futuro
+## Análisis estructurado en curso
 
-La extracción no identifica partes, delitos, hechos, pruebas ni cronología. Tampoco incorpora chunks, embeddings, RAG ni LLM. Esas capacidades permanecen separadas para validar trazabilidad y privacidad antes de implementarlas.
+El primer contrato Pydantic está en `ai-service/app/modules/analysis/`. Recibe lotes acotados de páginas extraídas y define resumen, etapa procesal, participantes, delitos referidos por el documento, hechos, pruebas, cronología, información faltante e incertidumbres.
+
+- Cada afirmación encontrada debe incluir página y extracto literal; la aplicación comprueba que la página pertenece al lote y que el extracto existe en su texto tras normalizar espacios.
+- La certeza se clasifica como `textual`, `inferido` o `incierto`; no se trata la salida del modelo como confirmación jurídica ni se convierte en culpabilidad.
+- Los lotes admiten hasta 10 páginas y 40.000 caracteres. No se envía el expediente completo en una sola solicitud.
+- Los campos extra se rechazan y las preguntas de información faltante no se presentan como hechos.
+
+Este contrato todavía no llama a un modelo, persiste análisis ni está expuesto como operación de usuario. El proveedor inicial, el modelo y la política de transferencia de texto jurídico están pendientes; hasta que se decidan, no hay envío de datos a servicios LLM.
+
+RAG, embeddings y recuperación jurídica siguen siendo fases separadas.
 
 ## Contexto estructurado objetivo
 

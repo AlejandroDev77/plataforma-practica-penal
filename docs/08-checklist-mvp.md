@@ -6,7 +6,7 @@ El MVP está listo cuando:
 - [x] Migraciones PostgreSQL de dominio, modelos y relaciones iniciales.
 - [x] Integridad referencial y restricciones cubiertas por pruebas.
 - [x] Pruebas locales ejecutadas contra PostgreSQL aislado; no se tocó la base PostgreSQL habitual.
-- [ ] Merge a `develop` después de que GitHub permita ejecutar los checks obligatorios.
+- [x] Integración de la base inicial en `develop` mediante PR #1, con checks requeridos aprobados.
 
 ## Usuario
 - [x] registro, login, logout y recuperación de contraseña usan sesión real;
@@ -15,6 +15,7 @@ El MVP está listo cuando:
 - [x] API de expedientes limita lectura, cambios, descarga y eliminación al propietario autenticado;
 
 ## Expediente
+- [x] autenticación, CRUD de expedientes, archivos privados y extracción integrados en `develop` mediante PR #2–#4;
 - [x] crea, consulta, edita y elimina expedientes propios;
 - [x] acepta varios PDF/imágenes, limita tamaño y los guarda privados en desarrollo;
 - [ ] configurar y probar bucket R2 real;
@@ -26,6 +27,8 @@ El MVP está listo cuando:
 - [x] conserva archivo, página/localizador, uso de OCR y legibilidad.
 
 ## Análisis
+- [x] contrato Pydantic acotado con afirmaciones y extractos de origen;
+- [x] referencias verificadas contra las páginas entregadas al lote;
 - [ ] genera resumen;
 - [ ] detecta participantes;
 - [ ] detecta delitos;

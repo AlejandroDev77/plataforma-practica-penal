@@ -2,9 +2,9 @@
 
 ## Estado y regla de avance
 
-La base inicial PostgreSQL está implementada y validada localmente en `funcionalidad/base-de-datos`; autenticación/autorización está implementada en `funcionalidad/autenticacion`, y expedientes/archivos en `funcionalidad/gestion-expedientes`. Las tres fases siguen siendo ramas locales: por instrucción del usuario no se hace push, PR ni integración remota hasta que decida reanudar GitHub.
+Las fases de base de datos, autenticación, gestión de expedientes y extracción están integradas en `develop` mediante los PR #1–#4; los checks requeridos de GitHub pasaron antes de cada merge. El usuario confirmó el desbloqueo de facturación de GitHub el 27-09-2026. `main` no se ha modificado.
 
-El desarrollo continúa en orden, con una fase por rama/tarea. Antes de extracción/OCR se cierra localmente la rama de expedientes y se verifica con PostgreSQL de pruebas aislado. Las pruebas no usan la base PostgreSQL habitual. La siguiente fase es extracción documental; todavía no se habilita análisis con LLM, RAG ni simulación.
+El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. La siguiente tarea es completar el contrato de análisis ya iniciado en `funcionalidad/analisis-expedientes`; todavía no se habilitan llamadas a LLM, RAG ni simulación. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
 
 ## Fase 0 — Base
 - crear repositorio;
@@ -28,7 +28,7 @@ frontend y backend arrancan localmente; el servicio IA ofrece únicamente su esq
 - [x] recuperación y restablecimiento de contraseña;
 - [x] bootstrap del primer administrador desde consola, nunca desde el formulario.
 
-Estado: implementada y verificada localmente en `funcionalidad/autenticacion`; todavía no publicada ni integrada.
+Estado: implementada, verificada e integrada en `develop` mediante PR #2.
 
 Resultado:
 un usuario autenticado con rol administrativo puede entrar al dashboard. El registro público crea solo una cuenta básica, nunca concede permisos administrativos.
@@ -52,7 +52,7 @@ El perfil visible viene de la sesión real; editar identidad y guardar preferenc
 Resultado:
 usuario gestiona solo sus propios expedientes.
 
-Estado: implementada y probada localmente en `funcionalidad/gestion-expedientes`. El contenido queda privado y solo hay descarga autenticada. R2 ya tiene adaptador, pero aún no se configuró ni probó un bucket. No hay extracción de texto, OCR, detección de páginas ni análisis; eso se implementa en la fase 3.
+Estado: implementada, probada e integrada en `develop` mediante PR #3. El contenido queda privado y solo hay descarga autenticada. R2 tiene adaptador, pero aún no se configuró ni probó un bucket. La extracción se añadió en la fase 3.
 
 ---
 
@@ -65,7 +65,7 @@ Estado: implementada y probada localmente en `funcionalidad/gestion-expedientes`
 - [x] proteger la API interna FastAPI con token compartido y validar límites;
 - [ ] instalar Tesseract con idioma español y verificar OCR real sobre un escaneo sintético.
 
-Estado: pipeline local y pruebas automáticas listos. En esta máquina no se encontró el ejecutable Tesseract; mientras falte, las imágenes escaneadas se reportan como no legibles y el proceso no declara éxito. DOCX muestra el documento completo porque su paginación física no está disponible en esta extracción.
+Estado: pipeline y pruebas automáticas integrados en `develop` mediante PR #4. En esta máquina no se encontró el ejecutable Tesseract; mientras falte, las imágenes escaneadas se reportan como no legibles y el proceso no declara éxito. DOCX muestra el documento completo porque su paginación física no está disponible en esta extracción.
 
 El procesamiento funciona de forma nativa, sin Docker: el worker Laravel entrega el archivo privado a FastAPI con token, PyMuPDF/python-docx extraen texto y las páginas/localizadores y estados se guardan en PostgreSQL. FastAPI no persiste copias del expediente ni llama a LLM.
 
@@ -74,19 +74,15 @@ Resultado de la fase: texto recuperado asociado al archivo y a páginas/localiza
 ---
 
 ## Fase 4 — Análisis IA
-Extraer:
-- resumen;
-- partes;
-- delitos;
-- hechos;
-- pruebas;
-- cronología;
-- etapa procesal;
-- información faltante;
-- incertidumbres.
+- [x] definir el contrato JSON estricto para resumen, etapa, participantes, delitos, hechos, pruebas y cronología;
+- [x] representar vacíos e incertidumbres sin inventar hechos;
+- [x] exigir citas textuales vinculadas a páginas del lote autorizado;
+- [x] limitar páginas y caracteres procesados por lote;
+- [ ] decidir proveedor/modelo inicial y política para enviar texto jurídico;
+- [ ] ejecutar análisis por cola y persistir una versión trazable en las tablas existentes;
+- [ ] mostrar el resultado al propietario para revisión.
 
-Resultado:
-JSON validado por Pydantic.
+Estado: el esquema Pydantic y la validación de citas están implementados en `funcionalidad/analisis-expedientes`. No hay llamadas a LLM ni análisis de contenido real. La decisión de proveedor/modelo sigue pendiente porque cambia privacidad, coste y configuración; hasta entonces el contrato se prueba con datos sintéticos.
 
 ---
 

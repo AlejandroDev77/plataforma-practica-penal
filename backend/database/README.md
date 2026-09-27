@@ -85,5 +85,5 @@ Si se aplicaron y se usa rollback, incluir su ruta junto a la principal, por eje
 
 ## Git
 
-`main ← develop ← funcionalidad/base-de-datos`.
-Las reglas completas están en `AGENTS.md` y `docs/07-reglas-codex.md`. Los checks requeridos del PR no arrancan mientras GitHub mantenga bloqueada la cuenta por facturación. No afirmamos que las protecciones de ramas estén configuradas más allá de lo que se ve en el PR. No desactivar ni omitir los checks: hasta resolver la cuenta, conservar el trabajo en local. No se hace push o merge sin la indicación del usuario y los checks aprobados.
+`main ← develop ← ramas de trabajo`.
+La base de datos inicial se integró en `develop` mediante PR #1, después de aprobar los checks requeridos. El usuario confirmó el desbloqueo de facturación de GitHub y Actions ya ejecuta workflows. Para los siguientes cambios, publicar la rama de trabajo en un PR a `develop` e integrar solo después de que pasen todos los checks requeridos. No omitir ni desactivar protecciones; `main` solo recibe PR desde `develop` cuando exista una versión estable.

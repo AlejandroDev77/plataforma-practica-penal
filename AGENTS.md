@@ -9,11 +9,11 @@
 - Tipos: `funcionalidad`, `correccion`, `mejora`, `refactorizacion`, `prueba`, `documentacion`, `configuracion`.
 - Base de datos: `funcionalidad/base-de-datos`.
 - Al terminar: ejecutar verificaciones, revisar y añadir solo archivos de la tarea y hacer commits locales cuando corresponda.
-- Mientras siga sin resolverse el bloqueo de facturación de GitHub, no hacer push, no crear/actualizar PR y no intentar saltar checks. Reanudar publicación solo cuando el usuario lo indique y las comprobaciones requeridas puedan ejecutarse.
+- Si el bloqueo de facturación de GitHub vuelve a impedir que Actions ejecute los checks, detener la publicación; no omitir ni desactivar protecciones.
 - Cuando se autorice publicar: push de la rama y PR a `develop`; integrar únicamente después de que los checks requeridos pasen.
 - No realizar merge automático a `main`, eliminar ramas principales ni force push.
 - No crear ramas futuras hasta que se solicite su tarea.
-- Excepción local vigente: el usuario pidió continuar durante el bloqueo de GitHub. Si una fase nueva depende de `funcionalidad/base-de-datos` aún no integrada, puede trabajarse en una rama local derivada de ella; no publicarla. Al habilitarse GitHub, primero integrar base de datos con checks aprobados y después rebasar la rama dependiente sobre `develop` antes de publicarla.
+- La base de datos, autenticación, gestión de expedientes y extracción ya están integradas en `develop` mediante PRs aprobados. La rama existente `funcionalidad/analisis-expedientes` debe sincronizarse con `origin/develop` antes de publicar su contrato; no crear una rama sustituta.
 
 ## Implementación
 - Leer `docs/00-contexto.md`, `docs/07-reglas-codex.md` y únicamente los documentos de la fase.
