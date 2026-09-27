@@ -112,11 +112,11 @@ No mezclar lógica jurídica/IA compleja dentro de controladores Laravel.
 ## Estado de implementación
 
 - La estructura de los tres proyectos existe.
-- La base inicial PostgreSQL de dominio está implementada y tiene pruebas locales; su integración por GitHub queda pendiente de que los checks requeridos puedan ejecutarse.
-- Autenticación, recuperación de contraseña y control de rol están implementados localmente; no se han publicado ni integrado.
-- CRUD de expedientes y gestión de archivos están implementados y probados localmente en una rama dependiente, con disco privado local como configuración por defecto.
+- La base inicial PostgreSQL de dominio está implementada, probada con PostgreSQL aislado e integrada en `develop` mediante PR #1.
+- Autenticación, recuperación de contraseña y control de rol están integrados en `develop` mediante PR #2.
+- CRUD de expedientes y gestión de archivos privados están probados e integrados en `develop` mediante PR #3; el disco privado local es la configuración por defecto.
 - R2 se conecta mediante el adaptador S3 de Flysystem cuando existan credenciales; la integración de cuenta/bucket aún no se ha probado.
-- La extracción de PDF digital, DOCX e imágenes está implementada localmente con cola Laravel, API FastAPI interna y consulta de texto por páginas.
+- La extracción de PDF digital, DOCX e imágenes está integrada en `develop` mediante PR #4, con cola Laravel, API FastAPI interna y consulta autenticada del texto por páginas.
 - OCR tiene manejo selectivo y límites, pero requiere Tesseract y el modelo `spa`; no está instalado ni verificado con OCR real en este equipo.
 - El contrato Pydantic para análisis estructurado está iniciado: limita lotes y requiere citas textuales asociadas a páginas del propio lote. Aún no hay proveedor/modelo acordado ni llamadas LLM; RAG y simulación siguen pendientes.
-- Los cambios continúan como ramas y commits locales hasta que el usuario reabra explícitamente el flujo GitHub.
+- El bloqueo de facturación de GitHub se resolvió y Actions ya ejecuta los checks. El flujo activo es rama de trabajo → PR a `develop` → merge cuando pasen los checks; `main` permanece sin cambios.

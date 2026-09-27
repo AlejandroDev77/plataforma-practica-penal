@@ -1,6 +1,6 @@
 # IA de expedientes
 
-Estado: la fase local de extracción está implementada. PDF, DOCX e imágenes se procesan en una cola de Laravel mediante el servicio interno FastAPI. Las pruebas automáticas usan documentos sintéticos. En este equipo todavía falta instalar Tesseract y su modelo español para verificar OCR real de escaneos.
+Estado: la fase de extracción está integrada en `develop` mediante PR #4. PDF, DOCX e imágenes se procesan en una cola de Laravel mediante el servicio interno FastAPI. Las pruebas automáticas usan documentos sintéticos. En este equipo todavía falta instalar Tesseract y su modelo español para verificar OCR real de escaneos.
 
 ## Alcance implementado
 

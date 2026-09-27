@@ -1,6 +1,6 @@
 # Modelo de datos inicial — JURISSIM
 
-Estado: esquema inicial implementado y validado localmente con PostgreSQL de pruebas aislado. Autenticación, CRUD de expedientes/archivos y almacenamiento de páginas extraídas ya tienen API; las tablas de análisis, recuperación, simulación y evaluación no significan que esos flujos estén construidos.
+Estado: esquema inicial implementado, validado con PostgreSQL de pruebas aislado e integrado en `develop` mediante PR #1. Autenticación, CRUD de expedientes/archivos y almacenamiento de páginas extraídas también están integrados; las tablas de análisis, recuperación, simulación y evaluación no significan que esos flujos estén construidos.
 
 El contrato Pydantic para el contenido de `analisis_expediente.datos_estructurados` está en desarrollo; aún no se crean versiones de análisis ni filas normalizadas a partir de un modelo.
 
