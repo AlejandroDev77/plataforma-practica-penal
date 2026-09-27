@@ -80,6 +80,8 @@ Si se aplicaron y se usa rollback, incluir su ruta junto a la principal, por eje
 - El futuro servicio de limpieza deberá bloquear/reintentar cada tarea, comprobar que la clave no esté nuevamente referenciada y borrar el objeto de forma idempotente.
 - `orden` es único por simulación. El futuro motor debe asignarlo bajo bloqueo de fila/transacción; no usar MAX + 1 sin protección.
 - Las etapas/transiciones son un catálogo inicial configurable, no un motor procesal implementado.
+- `paginas_expediente.localizador` guarda la página de PDF/imagen o la nota “documento completo” en archivos cuya paginación no se puede obtener, como DOCX.
+- La lectura de PDF/DOCX/imagen se realiza en un trabajo de cola. Para ejecutarla de forma local, arrancar FastAPI y luego `php artisan queue:work --tries=3 --timeout=600`; configurar el mismo token interno en ambos `.env`. El worker no reemplaza ni usa `jurissim` para pruebas.
 
 ## Git
 

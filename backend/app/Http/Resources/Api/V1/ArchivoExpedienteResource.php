@@ -23,6 +23,7 @@ final class ArchivoExpedienteResource extends JsonResource
             'page_count' => $this->cantidad_paginas,
             'requires_ocr' => $this->requiere_ocr,
             'processing_status' => $this->estado_procesamiento,
+            'processing_message' => $this->mensaje_error,
             'created_at' => $this->fecha_creacion?->toISOString(),
         ];
     }

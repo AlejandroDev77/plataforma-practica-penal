@@ -95,7 +95,7 @@ class BaseDatosJurissimTest extends TestCase
         $expedientes = Expediente::factory()->count(2)->for($usuario, 'usuario')->create();
         $archivos = ArchivoExpediente::factory()->count(2)->for($expedientes[0], 'expediente')->create();
         foreach ([1, 2] as $numero) {
-            $archivos[0]->paginas()->create(['numero_pagina' => $numero, 'texto_extraido' => 'Texto.', 'uso_ocr' => true, 'nivel_confianza' => 0.9]);
+            $archivos[0]->paginas()->create(['numero_pagina' => $numero, 'localizador' => 'Página '.$numero, 'texto_extraido' => 'Texto.', 'uso_ocr' => true, 'nivel_confianza' => 0.9]);
         }
         $this->assertCount(2, $usuario->expedientes);
         $this->assertCount(2, $expedientes[0]->archivos);
@@ -103,6 +103,7 @@ class BaseDatosJurissimTest extends TestCase
         $pagina = $archivos[0]->paginas->first();
         $this->assertTrue($pagina->archivo->is($archivos[0]));
         $this->assertTrue($pagina->uso_ocr);
+        $this->assertSame('Página 1', $pagina->localizador);
         $this->assertNotNull($pagina->fecha_creacion);
         $this->assertArrayNotHasKey('ruta_almacenamiento', $archivos[0]->toArray());
     }

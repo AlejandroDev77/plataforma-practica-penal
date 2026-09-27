@@ -10,7 +10,18 @@ export interface CaseFile {
   page_count: number | null
   requires_ocr: boolean
   processing_status: ProcessingStatus
+  processing_message: string | null
   created_at: string
+}
+
+export interface FileExtractionPage {
+  id: number
+  page_number: number
+  locator: string
+  text: string | null
+  used_ocr: boolean
+  confidence: number | null
+  is_readable: boolean
 }
 
 export interface LegalCase {

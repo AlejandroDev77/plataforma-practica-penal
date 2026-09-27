@@ -1,5 +1,5 @@
 import { httpClient } from '../../../shared/api/http-client'
-import type { CaseFile, LegalCase, Paginated } from '../model/case'
+import type { CaseFile, FileExtractionPage, LegalCase, Paginated } from '../model/case'
 
 export async function listCases(search: string, page = 1): Promise<Paginated<LegalCase>> {
   const response = await httpClient.get<Paginated<LegalCase>>('/api/v1/expedientes', {
@@ -58,4 +58,12 @@ export async function downloadCaseFile(caseId: number, fileId: number, fileName:
 
 export async function deleteCaseFile(caseId: number, fileId: number): Promise<void> {
   await httpClient.delete(`/api/v1/expedientes/${caseId}/archivos/${fileId}`)
+}
+
+export async function listFilePages(caseId: number, fileId: number, page = 1): Promise<Paginated<FileExtractionPage>> {
+  const response = await httpClient.get<Paginated<FileExtractionPage>>(
+    `/api/v1/expedientes/${caseId}/archivos/${fileId}/paginas`,
+    { params: { page } },
+  )
+  return response.data
 }

@@ -2,12 +2,16 @@
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\ProcesarArchivoExpediente;
 use App\Models\ArchivoExpediente;
 use App\Models\Expediente;
+use App\Models\HistorialProcesamiento;
 use App\Models\ObjetoPendienteEliminacion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -104,6 +108,7 @@ class ExpedienteTest extends TestCase
 
     public function test_upload_stores_multiple_allowed_files_privately_and_returns_only_safe_metadata(): void
     {
+        Queue::fake();
         Storage::fake('local');
         $owner = User::factory()->create();
         $expediente = $this->createExpediente($owner, 'Caso con documentos');
@@ -116,6 +121,7 @@ class ExpedienteTest extends TestCase
         ], ['Accept' => 'application/json']);
 
         $response->assertCreated()->assertJsonCount(2, 'data');
+        Queue::assertPushed(ProcesarArchivoExpediente::class, 2);
         $this->assertDatabaseCount('archivos_expediente', 2);
         $response->assertJsonMissingPath('data.0.storage_path');
         $response->assertJsonMissingPath('data.0.disk');
@@ -153,6 +159,7 @@ class ExpedienteTest extends TestCase
             $this->markTestSkipped('La verificación del contenedor DOCX requiere ext-zip.');
         }
 
+        Queue::fake();
         Storage::fake('local');
         $owner = User::factory()->create();
         $expediente = $this->createExpediente($owner, 'DOCX válido');
@@ -171,6 +178,7 @@ class ExpedienteTest extends TestCase
             ], ['Accept' => 'application/json'])
                 ->assertCreated()
                 ->assertJsonPath('data.0.extension', 'docx');
+            Queue::assertPushed(ProcesarArchivoExpediente::class);
         } finally {
             if (is_file($path)) {
                 unlink($path);
@@ -202,6 +210,74 @@ class ExpedienteTest extends TestCase
         Storage::disk('local')->assertMissing($path);
         $this->assertSame('procesado', ObjetoPendienteEliminacion::query()->where('ruta_almacenamiento', $path)->value('estado'));
         $this->assertDatabaseHas('archivos_expediente', ['id_archivo' => $otherFile->getKey()]);
+    }
+
+    public function test_document_job_stores_page_text_and_finishes_processing_history(): void
+    {
+        Storage::fake('local');
+        config([
+            'services.intelligence.url' => 'http://localhost:8100',
+            'services.intelligence.token' => 'prueba-interna',
+            'services.intelligence.timeout' => 20,
+        ]);
+        $owner = User::factory()->create();
+        $expediente = $this->createExpediente($owner, 'Extracción de prueba');
+        $path = 'expedientes/'.$expediente->getKey().'/actuacion.pdf';
+        Storage::disk('local')->put($path, "%PDF-1.4\ntexto\n%%EOF");
+        $archivo = $expediente->archivos()->create($this->fileAttributes($path, 'actuacion.pdf'));
+        Http::fake([
+            'http://localhost:8100/api/v1/documents/extract' => Http::response([
+                'document_type' => 'pdf',
+                'page_count' => 1,
+                'pages' => [[
+                    'page_number' => 1,
+                    'locator' => 'Página 1',
+                    'text' => 'Se solicita la aplicación de medidas cautelares.',
+                    'used_ocr' => false,
+                    'confidence' => null,
+                    'is_readable' => true,
+                ]],
+                'warnings' => [],
+            ]),
+        ]);
+
+        (new ProcesarArchivoExpediente($archivo->getKey()))->handle();
+
+        $this->assertSame('procesado', $archivo->fresh()->estado_procesamiento);
+        $this->assertSame('procesado', $expediente->fresh()->estado_procesamiento);
+        $this->assertDatabaseHas('paginas_expediente', [
+            'id_archivo' => $archivo->getKey(),
+            'numero_pagina' => 1,
+            'localizador' => 'Página 1',
+            'texto_extraido' => 'Se solicita la aplicación de medidas cautelares.',
+            'es_legible' => true,
+        ]);
+        $this->assertSame('procesado', HistorialProcesamiento::query()->sole()->estado);
+        Http::assertSent(fn ($request): bool => $request->hasHeader('Authorization', 'Bearer prueba-interna'));
+    }
+
+    public function test_extracted_pages_are_visible_only_to_the_expediente_owner(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $expediente = $this->createExpediente($owner, 'Texto extraído');
+        $otherCase = $this->createExpediente($other, 'Otro expediente');
+        $archivo = $expediente->archivos()->create($this->fileAttributes('privado.pdf', 'privado.pdf'));
+        $archivo->paginas()->create([
+            'numero_pagina' => 1,
+            'localizador' => 'Página 1',
+            'texto_extraido' => 'Contenido reservado del expediente.',
+            'es_legible' => true,
+        ]);
+        Sanctum::actingAs($owner);
+
+        $this->getJson('/api/v1/expedientes/'.$expediente->getKey().'/archivos/'.$archivo->getKey().'/paginas')
+            ->assertOk()
+            ->assertJsonPath('data.0.locator', 'Página 1')
+            ->assertJsonPath('data.0.text', 'Contenido reservado del expediente.')
+            ->assertJsonPath('meta.total', 1);
+        $this->getJson('/api/v1/expedientes/'.$otherCase->getKey().'/archivos/'.$archivo->getKey().'/paginas')
+            ->assertNotFound();
     }
 
     public function test_deleting_an_expediente_removes_its_private_files_and_leaves_other_users_untouched(): void

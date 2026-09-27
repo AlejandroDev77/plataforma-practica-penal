@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreExpedienteArchivosRequest;
 use App\Http\Resources\Api\V1\ArchivoExpedienteResource;
+use App\Http\Resources\Api\V1\PaginaExpedienteResource;
+use App\Jobs\ProcesarArchivoExpediente;
 use App\Models\Expediente;
 use App\Services\ExpedienteArchivoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -19,8 +22,23 @@ final class ExpedienteArchivoController extends Controller
     {
         $record = $this->ownedExpediente($request, $expediente);
         $files = $service->store($record, $request->file('archivos', []));
+        foreach ($files as $file) {
+            ProcesarArchivoExpediente::dispatch($file->getKey())->afterCommit();
+        }
 
         return ArchivoExpedienteResource::collection(collect($files))->response()->setStatusCode(201);
+    }
+
+    public function pages(Request $request, int $expediente, int $archivo): AnonymousResourceCollection
+    {
+        $file = $this->ownedExpediente($request, $expediente)
+            ->archivos()
+            ->whereKey($archivo)
+            ->firstOrFail();
+
+        return PaginaExpedienteResource::collection(
+            $file->paginas()->paginate(20)->withQueryString(),
+        );
     }
 
     public function download(Request $request, int $expediente, int $archivo): StreamedResponse

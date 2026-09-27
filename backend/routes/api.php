@@ -30,6 +30,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/expedientes/{expediente}', [ExpedienteController::class, 'destroy']);
         Route::post('/expedientes/{expediente}/archivos', [ExpedienteArchivoController::class, 'store']);
         Route::get('/expedientes/{expediente}/archivos/{archivo}/descarga', [ExpedienteArchivoController::class, 'download']);
+        Route::get('/expedientes/{expediente}/archivos/{archivo}/paginas', [ExpedienteArchivoController::class, 'pages']);
         Route::delete('/expedientes/{expediente}/archivos/{archivo}', [ExpedienteArchivoController::class, 'destroy']);
     });
 });

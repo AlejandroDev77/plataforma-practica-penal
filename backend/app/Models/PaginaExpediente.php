@@ -14,6 +14,7 @@ class PaginaExpediente extends ModeloDominio
     protected $fillable = [
         'id_archivo',
         'numero_pagina',
+        'localizador',
         'texto_extraido',
         'uso_ocr',
         'nivel_confianza',
