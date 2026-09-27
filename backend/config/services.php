@@ -38,7 +38,7 @@ return [
     'intelligence' => [
         'url' => env('INTELLIGENCE_SERVICE_URL', 'http://localhost:8100'),
         'token' => env('INTELLIGENCE_SERVICE_TOKEN'),
-        'timeout' => (int) env('INTELLIGENCE_SERVICE_TIMEOUT', 30),
+        'timeout' => (int) env('INTELLIGENCE_SERVICE_TIMEOUT', 300),
     ],
 
 ];

@@ -3,8 +3,8 @@ import { X, Search, Download } from 'lucide-react'
 import { cn } from '../../shared/lib/cn'
 
 export function Badge({ children }: { children: string }) {
-  const good = ['Activo', 'Disponible', 'Verificado', 'Publicado', 'Finalizada'].includes(children)
-  const bad = ['Suspendido', 'Observado', 'Cancelada'].includes(children)
+  const good = ['Activo', 'Disponible', 'Verificado', 'Publicado', 'Finalizada', 'Listo'].includes(children)
+  const bad = ['Suspendido', 'Observado', 'Cancelada', 'Error', 'Revisar extracción'].includes(children)
   return <span className={cn('status', good ? 'status-green' : bad ? 'status-red' : 'status-amber')}><span />{children}</span>
 }
 export function PageHeading({ eyebrow, title, description, children }: { eyebrow: string; title: string; description: string; children?: ReactNode }) {

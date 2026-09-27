@@ -57,19 +57,19 @@ Estado: implementada y probada localmente en `funcionalidad/gestion-expedientes`
 ---
 
 ## Fase 3 — Extracción
-Pipeline:
+- [x] enviar archivos privados a un trabajo de cola de Laravel;
+- [x] extraer texto de PDF digital por página;
+- [x] extraer texto DOCX sin simular una paginación física;
+- [x] recorrer imágenes JPG, PNG y hojas TIFF con OCR selectivo;
+- [x] guardar páginas, localizadores, legibilidad y estado del proceso;
+- [x] proteger la API interna FastAPI con token compartido y validar límites;
+- [ ] instalar Tesseract con idioma español y verificar OCR real sobre un escaneo sintético.
 
-```text
-archivo
--> detectar formato
--> extraer texto
--> OCR si es necesario
--> normalizar
--> separar páginas
-```
+Estado: pipeline local y pruebas automáticas listos. En esta máquina no se encontró el ejecutable Tesseract; mientras falte, las imágenes escaneadas se reportan como no legibles y el proceso no declara éxito. DOCX muestra el documento completo porque su paginación física no está disponible en esta extracción.
 
-Resultado:
-texto recuperado con relación archivo/página.
+El procesamiento funciona de forma nativa, sin Docker: el worker Laravel entrega el archivo privado a FastAPI con token, PyMuPDF/python-docx extraen texto y las páginas/localizadores y estados se guardan en PostgreSQL. FastAPI no persiste copias del expediente ni llama a LLM.
+
+Resultado de la fase: texto recuperado asociado al archivo y a páginas/localizadores, con las limitaciones explícitas de DOCX y OCR aún sin Tesseract real.
 
 ---
 

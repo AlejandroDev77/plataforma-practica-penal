@@ -116,5 +116,7 @@ No mezclar lógica jurídica/IA compleja dentro de controladores Laravel.
 - Autenticación, recuperación de contraseña y control de rol están implementados localmente; no se han publicado ni integrado.
 - CRUD de expedientes y gestión de archivos están implementados y probados localmente en una rama dependiente, con disco privado local como configuración por defecto.
 - R2 se conecta mediante el adaptador S3 de Flysystem cuando existan credenciales; la integración de cuenta/bucket aún no se ha probado.
-- OCR, extracción, RAG y simulación todavía no se deben considerar implementados.
-- La siguiente fase de producto es extracción/OCR; antes se debe cerrar y verificar la fase de expedientes en local.
+- La extracción de PDF digital, DOCX e imágenes está implementada localmente con cola Laravel, API FastAPI interna y consulta de texto por páginas.
+- OCR tiene manejo selectivo y límites, pero requiere Tesseract y el modelo `spa`; no está instalado ni verificado con OCR real en este equipo.
+- Análisis estructurado, RAG y simulación siguen pendientes. La extracción actual no manda archivos a LLM ni guarda archivos en FastAPI.
+- Los cambios continúan como ramas y commits locales hasta que el usuario reabra explícitamente el flujo GitHub.

@@ -19,9 +19,11 @@ El MVP está listo cuando:
 - [x] acepta varios PDF/imágenes, limita tamaño y los guarda privados en desarrollo;
 - [ ] configurar y probar bucket R2 real;
 - [x] acepta DOCX Office Open XML válido, verificado sin extraer el ZIP;
-- [ ] extrae texto seleccionable de PDF digital;
-- [ ] realiza OCR a PDF escaneado;
-- [ ] conserva página/origen.
+- [x] extrae texto de PDF digital por página;
+- [x] extrae texto DOCX y avisa que no puede asegurar paginación física;
+- [x] OCR selectivo está implementado para páginas escaneadas e imágenes;
+- [ ] instalar Tesseract/idioma español y verificar OCR con un escaneo sintético;
+- [x] conserva archivo, página/localizador, uso de OCR y legibilidad.
 
 ## Análisis
 - [ ] genera resumen;

@@ -257,6 +257,16 @@ td small { display: block; font-size: 9px; color: #7a8769; margin-top: 7px; }
 .case-file-list .document-row > div:first-of-type { min-width: 0; overflow-wrap: anywhere; }
 .case-file-list .document-row > .row-actions { flex: 0 0 auto; }
 .case-file-list .document-row strong { overflow-wrap: anywhere; }
+.document-entry { border-bottom: 1px solid #e6eadc; }
+.document-entry .document-row { border-bottom: 0; }
+.file-processing-message { margin: -10px 0 16px 33px; color: #9c4d38; font-size: 11px; line-height: 1.6; }
+.extraction-panel { margin: 0 0 18px 33px; padding: 15px 17px; border-left: 2px solid #a8b98d; background: #f7f8f2; }
+.extraction-page + .extraction-page { border-top: 1px solid #dfe5d3; margin-top: 14px; padding-top: 14px; }
+.extraction-page-heading { display: flex; align-items: center; gap: 10px; color: #435a34; font-size: 11px; }
+.extraction-page-heading span { color: #70855c; font-size: 10px; }
+.extraction-page > p { max-height: 380px; overflow: auto; margin: 10px 0 0; color: #435044; font-size: 12px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.extraction-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 15px; border-top: 1px solid #dfe5d3; margin-top: 15px; color: #627653; font-size: 10px; }
+.extraction-toggle { min-height: 36px; padding-inline: 12px; }
 .global-results > a { display: flex; justify-content: space-between; align-items: center; padding: 16px 4px; border-bottom: 1px solid #e5eadb; font-size: 12px; }
 .global-results > a:hover { background: #f2f7e8; }
 .global-results small { display: block; font-size: 10px; margin-top: 5px; color: #70875a; }
@@ -366,6 +376,13 @@ input[type='checkbox'] { accent-color: #4c6740; width: 16px; height: 16px; flex-
 @media (max-width: 1000px) { .dashboard-heading { align-items: flex-start; flex-direction: column; gap: 20px; } .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dashboard-grid { grid-template-columns: 1fr; } .recent-cases .date-cell, .recent-cases th:nth-child(3) { display: table-cell; } .agenda-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; } .agenda-item { border: none; align-items: flex-start; } .agenda-item small { flex-wrap: wrap; } .institution-panel { min-height: 245px; } .global-search > span { display: none; } .settings-layout { grid-template-columns: 1fr; } .settings-nav { flex-direction: row; } .detail-grid { grid-template-columns: 1fr; } .collection-summary-note { display: none; } .auth-editorial { padding: 38px 32px; } .auth-main { padding: 30px; } .auth-form-wrap h2 { font-size: 33px; } }
 @media (max-width: 760px) { .admin-app, .admin-app.is-collapsed { --sidebar-width: 254px; } .sidebar { transform: translateX(-100%); transition: transform .2s; } .sidebar.mobile-open { transform: translateX(0); } .sidebar-scrim { display: block; position: fixed; inset: 0; z-index: 35; background: #162c2266; } .app-body { margin-left: 0; } .mobile-close, .mobile-toggle { display: inline-flex; } .mobile-close { margin-left: auto; } .collapse-button { display: none; } .is-collapsed .sidebar-brand { padding: 27px 28px; } .is-collapsed .nav-group > p, .is-collapsed .nav-item > span, .is-collapsed .nav-item b { display: block; } .is-collapsed .nav-item { justify-content: flex-start; } .topbar { height: 65px; padding: 0 18px; gap: 12px; } .breadcrumb { gap: 8px; font-size: 9px; } .breadcrumb > span, .breadcrumb > i { display: none; } .topbar-actions { gap: 9px; } .account-text, .account-button > svg, .topbar-divider { display: none; } .global-search { padding: 5px; } .page-content { padding: 26px 18px; } .page-heading { flex-direction: column; align-items: flex-start; gap: 20px; } .heading-actions { flex-wrap: wrap; } .page-heading h1, .dashboard-heading h1 { font-size: 33px; } .app-footer { padding: 0 18px 20px; flex-wrap: wrap; font-size: 8px; } .period-line { font-size: 8px; } .period-line .demo-tag { display: none; } .panel-heading { padding: 21px 18px; } .panel-foot { flex-wrap: wrap; padding: 14px 18px; } .recent-cases td:first-child, .recent-cases th:first-child { padding-left: 18px; } .agenda-list { display: block; padding: 0 18px; } .agenda-item { align-items: center; border-bottom: 1px solid #dbe1ce; } .agenda-item p { font-size: 12px; } .agenda-item small { font-size: 10px; } .agenda-panel .panel-heading { padding-inline: 18px; } .activity-list { padding-inline: 18px; } .activity-row p { font-size: 9px; } .activity-row time { font-size: 8px; } .collection-toolbar { padding: 16px; gap: 12px; } .filter-group { width: 100%; } .filter-group select { min-width: 0; max-width: unset; width: 50%; } .search-field { max-width: none; } .collection-summary { padding: 15px 0; } .form-grid { grid-template-columns: 1fr; } .permissions-list { grid-template-columns: 1fr; } .settings-actions { flex-wrap: wrap; padding: 18px; } .settings-actions > p { width: 100%; } .settings-section { padding: 22px; } .roles-grid { gap: 12px; } .role-card { padding: 16px; } .role-card h2 { font-size: 21px; } .modal-head, .modal-body { padding: 21px; } .detail-list dt { width: 110px; } .top-popover { position: fixed; top: 66px; right: 12px; width: min(340px, calc(100vw - 24px)); } .account-popover { width: 240px; } .auth-layout { grid-template-columns: 1fr; } .auth-editorial { display: none; } .auth-main { min-height: 100dvh; padding: 27px 23px; } .auth-form-wrap { padding: 55px 0; } .auth-form-wrap h2 { font-size: 37px; } }
 @media (max-width: 760px) {
+  .case-file-list .document-row { flex-wrap: wrap; align-items: flex-start; }
+  .case-file-list .document-row > div:first-of-type { flex-basis: calc(100% - 42px); }
+  .case-file-list .document-row > .status { margin-left: 32px; }
+  .case-file-list .document-row > .row-actions { width: 100%; margin-left: 32px; }
+  .file-processing-message, .extraction-panel { margin-left: 0; }
+  .extraction-panel { padding: 13px; }
+  .extraction-pagination { flex-wrap: wrap; justify-content: center; }
   .topbar-left { gap: 10px; }
   .topbar .brand-name, .section-button span { display: none; }
   .navigation-popover { left: 12px; right: 12px; width: auto; }

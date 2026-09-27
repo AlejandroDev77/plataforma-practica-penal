@@ -1,6 +1,6 @@
 # Modelo de datos inicial — JURISSIM
 
-Estado: esquema inicial implementado en la rama de base de datos y validado localmente con pruebas PostgreSQL aisladas. Las tablas no implican que los flujos de negocio/API estén construidos.
+Estado: esquema inicial implementado y validado localmente con PostgreSQL de pruebas aislado. Autenticación, CRUD de expedientes/archivos y almacenamiento de páginas extraídas ya tienen API; las tablas de análisis, recuperación, simulación y evaluación no significan que esos flujos estén construidos.
 
 PostgreSQL. Las tablas de dominio y sus atributos están en español, con claves
 descriptivas y timestamps `fecha_creacion` / `fecha_actualizacion`.
@@ -23,7 +23,7 @@ Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.
 
 - `users.id → expedientes.id_usuario` determina propiedad. Relaciones autenticadas
   asignarán el propietario; `id_usuario` no es mass assignable en los modelos de dominio.
-- Un expediente tiene varios archivos; cada archivo tiene páginas numeradas únicas.
+- Un expediente tiene varios archivos; cada archivo tiene páginas numeradas únicas. `localizador` conserva la página física de PDF/imagen o indica explícitamente que un DOCX se extrajo como documento completo.
 - `(id_expediente, version)` identifica un análisis. Sus elementos extraídos e incidencias
   apuntan a `id_analisis`; las simulaciones fijan esa versión para conservar contexto.
 - Referencias tienen `id_expediente`, `id_analisis`, `id_archivo`, `id_pagina` opcional
@@ -57,6 +57,9 @@ migraciones, pruebas aisladas, eliminación y límites de esta fase.
 - DOCX se inspecciona como archivo ZIP sin extraerlo; se requieren `ext-zip` y la estructura Open XML esperada.
 - `FILESYSTEM_DISK=r2` permite configurar Cloudflare R2 mediante Flysystem S3 con `R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com`, región `auto`, bucket y credenciales; no se incluye bucket ni credenciales. R2 debe permanecer privado y probarse antes de activarlo.
 - Al eliminar un archivo/expediente, PostgreSQL registra claves pendientes; Laravel las elimina del disco luego del commit y conserva en cola los fallos para reintento.
-- Subir archivos no implica extracción ni análisis. La detección de páginas, texto, OCR, retención y antivirus no está implementada todavía.
+- Al subir archivos se encola una extracción de texto; eso no implica análisis jurídico, recuperación ni simulación. Antivirus y políticas de retención siguen pendientes. OCR necesita Tesseract instalado y configurado en el host.
+
+La extracción por cola registra el resultado en `paginas_expediente`, incluyendo texto, localizador, uso de OCR y legibilidad. Las páginas se consultan mediante una ruta autenticada que vuelve a limitar el archivo al propietario. El texto extraído es dato sensible y no se incluye en listados generales.
+El servicio interno FastAPI recibe solo el archivo que Laravel autorizó, valida el token, extrae en memoria y devuelve páginas; no usa LLM ni conserva otra copia. OCR real depende de Tesseract y del paquete de idioma español instalados en el equipo.
 
 Toda consulta futura de expedientes debe verificar propietario/autorización.

@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     service_token: SecretStr | None = None
     database_url: SecretStr | None = None
+    ocr_language: str = "spa+eng"
+    ocr_dpi: int = 200
+    ocr_tessdata_path: str | None = None
+    document_max_bytes: int = 52_428_800
+    document_max_pages: int = 500
+    page_ocr_threshold_characters: int = 24
+    page_max_pixels: int = 40_000_000
     llm_provider: str | None = None
     llm_model: str | None = None
     llm_api_key: SecretStr | None = None
