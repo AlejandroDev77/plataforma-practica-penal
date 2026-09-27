@@ -1,6 +1,6 @@
 # IA de expedientes
 
-Estado: la fase de extracción está integrada en `develop` mediante PR #4. PDF, DOCX e imágenes se procesan en una cola de Laravel mediante el servicio interno FastAPI. Las pruebas automáticas usan documentos sintéticos. En este equipo todavía falta instalar Tesseract y su modelo español para verificar OCR real de escaneos.
+Estado: la fase de extracción está integrada en `develop` mediante PR #4. PDF, DOCX e imágenes se procesan en una cola de Laravel mediante el servicio interno FastAPI. Las pruebas automáticas usan documentos sintéticos. Tesseract 5.5.0 está instalado en esta máquina; el OCR real en español se verificó con un PDF sintético y el modelo `spa` aislado en una carpeta temporal. Para usarlo en sesiones normales aún hay que configurar de forma persistente el modelo español y el `PATH` del proceso.
 
 ## Alcance implementado
 
@@ -27,7 +27,16 @@ La ruta interna es `POST /api/v1/documents/extract`; requiere el mismo `SERVICE_
 
 ## OCR nativo en Windows
 
-La dependencia Python de PyMuPDF no instala el ejecutable Tesseract. Instalar Tesseract en Windows y su modelo `spa` (el inglés `eng` es opcional) antes de procesar expedientes escaneados. PyMuPDF utiliza Tesseract para OCR y requiere los datos de idioma correspondientes. [Guía oficial de instalación OCR de PyMuPDF](https://pymupdf.readthedocs.io/en/latest/recipes-ocr.html) · [datos de idioma](https://pymupdf.readthedocs.io/en/latest/ocr/tesseract-language-packs.html).
+La dependencia Python de PyMuPDF no instala el ejecutable Tesseract. El servicio espera `tesseract` en el `PATH` del proceso y, con la configuración predeterminada `OCR_LANGUAGE=spa+eng`, que ambos modelos estén disponibles. En Windows, esta máquina tiene Tesseract 5.5.0 en `C:\Program Files\Tesseract-OCR`, pero ese directorio no está en el `PATH` y el modelo `spa` usado en la prueba se descargó a `%TEMP%`; por tanto, la verificación no implica que OCR quede habilitado permanentemente.
+
+Para habilitarlo en el entorno local, instala o conserva Tesseract y prepara un directorio persistente con `spa.traineddata` y `eng.traineddata`, obtenidos del [repositorio oficial de datos de Tesseract](https://github.com/tesseract-ocr/tessdata). Configura `OCR_TESSDATA_PATH` con ese directorio en `ai-service/.env`. Antes de iniciar FastAPI en la misma sesión de PowerShell, incorpora la carpeta del ejecutable al `PATH` y confirma ambos idiomas:
+
+```powershell
+$env:Path = 'C:\Program Files\Tesseract-OCR;' + $env:Path
+& 'C:\Program Files\Tesseract-OCR\tesseract.exe' --list-langs --tessdata-dir $env:OCR_TESSDATA_PATH
+```
+
+Debe mostrar `eng` y `spa`. PyMuPDF utiliza esos datos al ejecutar OCR. Consulta también la [guía oficial de OCR de PyMuPDF](https://pymupdf.readthedocs.io/en/latest/recipes-ocr.html) y la [referencia de idiomas](https://pymupdf.readthedocs.io/en/latest/ocr/tesseract-language-packs.html).
 
 Desde `ai-service/`, instalar las dependencias del módulo y de desarrollo:
 
