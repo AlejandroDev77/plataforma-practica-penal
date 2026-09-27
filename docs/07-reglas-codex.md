@@ -65,8 +65,10 @@ git switch -c funcionalidad/base-de-datos
 - Usar nombres en español, minúsculas y guiones: `tipo/nombre-descriptivo`.
 - Tipos: `funcionalidad/`, `correccion/`, `mejora/`, `refactorizacion/`,
   `prueba/`, `documentacion/`, `configuracion/`.
-- Al terminar, revisar el diff, añadir solo archivos de la tarea, hacer commit,
-  push con upstream y abrir PR hacia `develop`.
+- Al terminar, revisar el diff y añadir solo archivos de la tarea. Hacer commits locales; el push con upstream y el PR a `develop` se realizan cuando la publicación esté autorizada.
+- Excepción operativa vigente: mientras siga abierto el bloqueo de facturación de GitHub, conservar cambios y commits localmente. No hacer push, abrir/actualizar PR ni desactivar checks. Retomar el flujo remoto cuando el usuario lo indique y las verificaciones se puedan ejecutar.
+- Para continuar localmente una fase dependiente de la base de datos aún no integrada, se admite una rama hija local y no publicable. Cuando se reabra el flujo remoto: integrar primero la rama de base con checks aprobados y rebasar después la rama hija sobre `develop` antes de publicarla.
+- Integrar en `develop` solo cuando la rama esté validada y los checks requeridos estén verdes; no hacer merge local como atajo a protecciones remotas.
 - No incluir cambios ajenos en el commit, hacer merge automático a `main`,
   eliminar ramas principales ni force push.
 - La primera creación de `develop` puede usar el commit estable de `main`;

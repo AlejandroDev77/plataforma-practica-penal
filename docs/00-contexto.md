@@ -3,6 +3,8 @@
 ## Producto
 Plataforma web educativa para practicar audiencias judiciales penales bolivianas.
 
+El producto se llama JURISSIM. Su identidad visual es jurídica, sobria y profesional; la interfaz no se presenta como un asistente de IA genérico.
+
 ## Función principal
 El usuario carga uno o varios archivos de un expediente penal no preconfigurado.
 

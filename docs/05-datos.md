@@ -1,5 +1,7 @@
 # Modelo de datos inicial — JURISSIM
 
+Estado: esquema inicial implementado en la rama de base de datos y validado localmente con pruebas PostgreSQL aisladas. Las tablas no implican que los flujos de negocio/API estén construidos.
+
 PostgreSQL. Las tablas de dominio y sus atributos están en español, con claves
 descriptivas y timestamps `fecha_creacion` / `fecha_actualizacion`.
 Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.
