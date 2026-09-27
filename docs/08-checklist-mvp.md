@@ -26,6 +26,8 @@ El MVP está listo cuando:
 - [x] conserva archivo, página/localizador, uso de OCR y legibilidad.
 
 ## Análisis
+- [x] contrato Pydantic acotado con afirmaciones y extractos de origen;
+- [x] referencias verificadas contra las páginas entregadas al lote;
 - [ ] genera resumen;
 - [ ] detecta participantes;
 - [ ] detecta delitos;

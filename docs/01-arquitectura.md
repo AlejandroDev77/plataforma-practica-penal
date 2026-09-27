@@ -118,5 +118,5 @@ No mezclar lógica jurídica/IA compleja dentro de controladores Laravel.
 - R2 se conecta mediante el adaptador S3 de Flysystem cuando existan credenciales; la integración de cuenta/bucket aún no se ha probado.
 - La extracción de PDF digital, DOCX e imágenes está implementada localmente con cola Laravel, API FastAPI interna y consulta de texto por páginas.
 - OCR tiene manejo selectivo y límites, pero requiere Tesseract y el modelo `spa`; no está instalado ni verificado con OCR real en este equipo.
-- Análisis estructurado, RAG y simulación siguen pendientes. La extracción actual no manda archivos a LLM ni guarda archivos en FastAPI.
+- El contrato Pydantic para análisis estructurado está iniciado: limita lotes y requiere citas textuales asociadas a páginas del propio lote. Aún no hay proveedor/modelo acordado ni llamadas LLM; RAG y simulación siguen pendientes.
 - Los cambios continúan como ramas y commits locales hasta que el usuario reabra explícitamente el flujo GitHub.

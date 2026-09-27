@@ -2,6 +2,8 @@
 
 Estado: esquema inicial implementado y validado localmente con PostgreSQL de pruebas aislado. Autenticación, CRUD de expedientes/archivos y almacenamiento de páginas extraídas ya tienen API; las tablas de análisis, recuperación, simulación y evaluación no significan que esos flujos estén construidos.
 
+El contrato Pydantic para el contenido de `analisis_expediente.datos_estructurados` está en desarrollo; aún no se crean versiones de análisis ni filas normalizadas a partir de un modelo.
+
 PostgreSQL. Las tablas de dominio y sus atributos están en español, con claves
 descriptivas y timestamps `fecha_creacion` / `fecha_actualizacion`.
 Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.

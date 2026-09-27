@@ -74,19 +74,15 @@ Resultado de la fase: texto recuperado asociado al archivo y a páginas/localiza
 ---
 
 ## Fase 4 — Análisis IA
-Extraer:
-- resumen;
-- partes;
-- delitos;
-- hechos;
-- pruebas;
-- cronología;
-- etapa procesal;
-- información faltante;
-- incertidumbres.
+- [x] definir el contrato JSON estricto para resumen, etapa, participantes, delitos, hechos, pruebas y cronología;
+- [x] representar vacíos e incertidumbres sin inventar hechos;
+- [x] exigir citas textuales vinculadas a páginas del lote autorizado;
+- [x] limitar páginas y caracteres procesados por lote;
+- [ ] decidir proveedor/modelo inicial y política para enviar texto jurídico;
+- [ ] ejecutar análisis por cola y persistir una versión trazable en las tablas existentes;
+- [ ] mostrar el resultado al propietario para revisión.
 
-Resultado:
-JSON validado por Pydantic.
+Estado: el esquema Pydantic y la validación de citas están implementados localmente en la rama `funcionalidad/analisis-expedientes`. Todavía no se hace ninguna llamada a un LLM ni se analiza contenido real. La decisión de proveedor/modelo está pendiente porque cambia privacidad, coste y configuración; hasta entonces el contrato se prueba con datos sintéticos.
 
 ---
 
