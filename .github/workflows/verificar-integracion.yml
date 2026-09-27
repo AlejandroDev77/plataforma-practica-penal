@@ -1,0 +1,69 @@
+name: Verificar integración
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  ramas:
+    name: Validar flujo de ramas
+    runs-on: ubuntu-latest
+    env:
+      RAMA_BASE: ${{ github.base_ref }}
+      RAMA_ORIGEN: ${{ github.head_ref }}
+      REPOSITORIO_ORIGEN: ${{ github.event.pull_request.head.repo.full_name }}
+      REPOSITORIO_DESTINO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Comprobar destino, nombre y origen
+        shell: bash
+        run: |
+          if [[ "$RAMA_BASE" == "main" ]]; then
+            [[ "$RAMA_ORIGEN" == "develop" ]] || { echo "main solo recibe PR desde develop"; exit 1; }
+            [[ "$REPOSITORIO_ORIGEN" == "$REPOSITORIO_DESTINO" ]] || { echo "develop debe pertenecer a este repositorio"; exit 1; }
+          else
+            [[ "$RAMA_ORIGEN" =~ ^(funcionalidad|correccion|mejora|refactorizacion|prueba|documentacion|configuracion)/[a-z0-9]+(-[a-z0-9]+)*$ ]] || { echo "Nombre de rama no permitido"; exit 1; }
+            git merge-base --is-ancestor origin/develop HEAD || { echo "Actualizar la rama con develop antes de integrar"; exit 1; }
+          fi
+
+  backend:
+    name: Base de datos PostgreSQL
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: jurissim_pruebas
+      DB_USERNAME: jurissim_pruebas
+      DB_PASSWORD: jurissim_ci
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql
+          coverage: none
+      - name: Iniciar PostgreSQL nativo
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE USER jurissim_pruebas WITH PASSWORD 'jurissim_ci';"
+          sudo -u postgres createdb -O jurissim_pruebas jurissim_pruebas
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env
+      - run: php artisan key:generate
+      - run: php artisan migrate:fresh --seed --force
+      - run: php artisan test
+      - run: php vendor/bin/pint --test
