@@ -10,7 +10,7 @@ class SystemStatusTest extends TestCase
     {
         $this->getJson('/api/v1/status')
             ->assertOk()
-            ->assertJsonPath('data.service', 'praxis-penal-api')
+            ->assertJsonPath('data.service', 'jurissim-api')
             ->assertJsonPath('data.status', 'available');
     }
 }

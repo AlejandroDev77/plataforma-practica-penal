@@ -14,10 +14,10 @@ final class CurrentUserController extends Controller
 
         return response()->json([
             'data' => [
-                'id' => $user?->getKey(),
-                'name' => $user?->name,
-                'email' => $user?->email,
-                'roles' => $user?->getRoleNames() ?? [],
+                'id' => $user->getKey(),
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames()->values()->all(),
             ],
         ]);
     }
