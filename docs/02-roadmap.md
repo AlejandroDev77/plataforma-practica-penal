@@ -63,13 +63,14 @@ Estado: implementada, probada e integrada en `develop` mediante PR #3. El conten
 - [x] recorrer imágenes JPG, PNG y hojas TIFF con OCR selectivo;
 - [x] guardar páginas, localizadores, legibilidad y estado del proceso;
 - [x] proteger la API interna FastAPI con token compartido y validar límites;
-- [ ] instalar Tesseract con idioma español y verificar OCR real sobre un escaneo sintético.
+- [x] verificar OCR real en español sobre un escaneo sintético con Tesseract 5.5.0;
+- [ ] dejar el ejecutable Tesseract y el modelo `spa` configurados de forma persistente en el entorno local.
 
-Estado: pipeline y pruebas automáticas integrados en `develop` mediante PR #4. En esta máquina no se encontró el ejecutable Tesseract; mientras falte, las imágenes escaneadas se reportan como no legibles y el proceso no declara éxito. DOCX muestra el documento completo porque su paginación física no está disponible en esta extracción.
+Estado: pipeline y pruebas automáticas integrados en `develop` mediante PR #4. La prueba sintética real reconoció texto en español sin advertencias. Tesseract 5.5.0 está instalado en Windows, pero su carpeta aún no forma parte del `PATH`; el modelo `spa` se usó desde una carpeta temporal para esta verificación. Para que OCR quede disponible al iniciar FastAPI en otras sesiones, configurar una ruta persistente para `spa` y `eng` y agregar el ejecutable al `PATH` del proceso, según `docs/03-ia-expedientes.md`. DOCX muestra el documento completo porque su paginación física no está disponible en esta extracción.
 
 El procesamiento funciona de forma nativa, sin Docker: el worker Laravel entrega el archivo privado a FastAPI con token, PyMuPDF/python-docx extraen texto y las páginas/localizadores y estados se guardan en PostgreSQL. FastAPI no persiste copias del expediente ni llama a LLM.
 
-Resultado de la fase: texto recuperado asociado al archivo y a páginas/localizadores, con las limitaciones explícitas de DOCX y OCR aún sin Tesseract real.
+Resultado de la fase: texto recuperado asociado al archivo y a páginas/localizadores, con las limitaciones explícitas de DOCX y con OCR español probado sobre un documento sintético. El entorno permanente de OCR sigue pendiente.
 
 ---
 
