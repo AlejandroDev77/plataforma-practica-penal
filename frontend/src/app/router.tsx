@@ -1,14 +1,18 @@
 import { createBrowserRouter } from 'react-router-dom'
-import { AppShell } from '../layouts/AppShell'
-import { DashboardPage } from '../pages/dashboard/DashboardPage'
-import { NotFoundPage } from '../pages/errors/NotFoundPage'
-import { AuthPage } from '../pages/auth/AuthPage'
 import { RequireAuthentication } from '../features/auth/components/RequireAuthentication'
-import { RecordsPage } from '../pages/admin/RecordsPage'
-import { CaseDetailPage } from '../pages/admin/CaseDetailPage'
-import { SettingsPage } from '../pages/admin/SettingsPage'
-import { RolesPage } from '../pages/admin/RolesPage'
-import { ActivityPage } from '../pages/admin/ActivityPage'
+import { AuthPage } from '../pages/auth/AuthPage'
+import {
+  ActivityPage,
+  AppShell,
+  CaseDetailPage,
+  DashboardPage,
+  DeferredPage,
+  ExpedientesPage,
+  NotFoundPage,
+  RecordsPage,
+  RolesPage,
+  SettingsPage,
+} from './lazy-pages'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <AuthPage key="login" mode="login" /> },
@@ -20,15 +24,19 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        Component: AppShell,
+        element: <DeferredPage><AppShell /></DeferredPage>,
         children: [
-          { index: true, Component: DashboardPage },
-          ...(['expedientes', 'usuarios', 'documentos', 'biblioteca', 'audiencias'] as const).map((section) => ({ path: section, element: <RecordsPage key={section} section={section} /> })),
-          { path: 'expedientes/:id', Component: CaseDetailPage },
-          { path: 'configuracion', Component: SettingsPage },
-          { path: 'roles', Component: RolesPage },
-          { path: 'actividad', Component: ActivityPage },
-          { path: '*', Component: NotFoundPage },
+          { index: true, element: <DeferredPage><DashboardPage /></DeferredPage> },
+          { path: 'expedientes', element: <DeferredPage><ExpedientesPage /></DeferredPage> },
+          ...(['usuarios', 'documentos', 'biblioteca', 'audiencias'] as const).map((section) => ({
+            path: section,
+            element: <DeferredPage><RecordsPage key={section} section={section} /></DeferredPage>,
+          })),
+          { path: 'expedientes/:id', element: <DeferredPage><CaseDetailPage /></DeferredPage> },
+          { path: 'configuracion', element: <DeferredPage><SettingsPage /></DeferredPage> },
+          { path: 'roles', element: <DeferredPage><RolesPage /></DeferredPage> },
+          { path: 'actividad', element: <DeferredPage><ActivityPage /></DeferredPage> },
+          { path: '*', element: <DeferredPage><NotFoundPage /></DeferredPage> },
         ],
       },
     ],

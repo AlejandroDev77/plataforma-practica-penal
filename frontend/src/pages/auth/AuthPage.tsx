@@ -13,7 +13,7 @@ import {
 } from '../../features/auth/api/auth-api'
 import type { AuthenticatedUser } from '../../features/auth/model/auth-types'
 import { useCurrentUser } from '../../features/auth/model/use-current-user'
-import { Brand } from '../../layouts/AppShell'
+import { Brand } from '../../layouts/Brand'
 
 type AuthMode = 'login' | 'register' | 'recover' | 'reset'
 

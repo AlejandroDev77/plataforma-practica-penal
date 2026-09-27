@@ -2,7 +2,7 @@
 
 ## PostgreSQL local (sin Docker)
 
-Requisitos: PHP del proyecto con `pdo_pgsql`, PostgreSQL y Composer. Se validó sobre PostgreSQL 17.
+Requisitos: PHP del proyecto con `pdo_pgsql` y `zip`, PostgreSQL y Composer. Se validó sobre PostgreSQL 17. La extensión `zip` se usa para comprobar la estructura de archivos DOCX sin extraerlos.
 No se modifican dependencias ni se convierten datos SQLite existentes.
 
 1. Crear usuario y bases desde una conexión administradora de PostgreSQL. Elegir una contraseña propia:

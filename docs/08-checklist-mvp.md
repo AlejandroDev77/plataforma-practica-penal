@@ -12,14 +12,15 @@ El MVP está listo cuando:
 - [x] registro, login, logout y recuperación de contraseña usan sesión real;
 - [x] las rutas administrativas exigen sesión y rol autorizado;
 - [x] el registro asigna rol básico; el primer administrador se habilita por consola;
-- [ ] integrar fase de usuarios en `develop` después de resolver el bloqueo de GitHub;
-- [ ] usuario solo ve sus expedientes.
+- [x] API de expedientes limita lectura, cambios, descarga y eliminación al propietario autenticado;
 
 ## Expediente
-- [ ] admite varios PDF;
-- [ ] admite PDF digital;
-- [ ] admite PDF escaneado;
-- [ ] OCR funciona;
+- [x] crea, consulta, edita y elimina expedientes propios;
+- [x] acepta varios PDF/imágenes, limita tamaño y los guarda privados en desarrollo;
+- [ ] configurar y probar bucket R2 real;
+- [x] acepta DOCX Office Open XML válido, verificado sin extraer el ZIP;
+- [ ] extrae texto seleccionable de PDF digital;
+- [ ] realiza OCR a PDF escaneado;
 - [ ] conserva página/origen.
 
 ## Análisis

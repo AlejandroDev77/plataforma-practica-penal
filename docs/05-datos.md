@@ -47,4 +47,16 @@ Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.
 Consultar `backend/database/README.md` para configuración PostgreSQL, pgvector,
 migraciones, pruebas aisladas, eliminación y límites de esta fase.
 
+### Acceso a expedientes y archivos
+
+- La API lista y resuelve expedientes desde la relación del usuario autenticado; un ID de otra cuenta responde 404.
+- La creación asigna `id_usuario` en Laravel. El cliente no puede enviar propietario, estado ni estado de procesamiento.
+- Los archivos admitidos se limitan en el servidor a PDF, DOCX e imágenes JPG/PNG/TIFF, con máximo de 50 MB por archivo y 5 por carga.
+- En desarrollo se usa el disco `local` de Laravel, cuya raíz es privada y no requiere `storage:link`.
+- Las rutas internas, nombres almacenados y discos no se exponen en recursos JSON. Descarga requiere sesión y propiedad del expediente.
+- DOCX se inspecciona como archivo ZIP sin extraerlo; se requieren `ext-zip` y la estructura Open XML esperada.
+- `FILESYSTEM_DISK=r2` permite configurar Cloudflare R2 mediante Flysystem S3 con `R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com`, región `auto`, bucket y credenciales; no se incluye bucket ni credenciales. R2 debe permanecer privado y probarse antes de activarlo.
+- Al eliminar un archivo/expediente, PostgreSQL registra claves pendientes; Laravel las elimina del disco luego del commit y conserva en cola los fallos para reintento.
+- Subir archivos no implica extracción ni análisis. La detección de páginas, texto, OCR, retención y antivirus no está implementada todavía.
+
 Toda consulta futura de expedientes debe verificar propietario/autorización.

@@ -2,9 +2,9 @@
 
 ## Estado y regla de avance
 
-La base inicial de PostgreSQL (tablas de dominio, relaciones, restricciones, modelos, seeders y pruebas) está implementada en la rama local `funcionalidad/base-de-datos` y se validó en un PostgreSQL de pruebas aislado. La revisión/merge remoto sigue pendiente porque GitHub Actions no arranca debido al bloqueo de facturación de la cuenta. No se omiten checks ni se hace push mientras el usuario mantenga el trabajo local.
+La base inicial PostgreSQL está implementada y validada localmente en `funcionalidad/base-de-datos`; autenticación/autorización está implementada en `funcionalidad/autenticacion`, y expedientes/archivos en `funcionalidad/gestion-expedientes`. Las tres fases siguen siendo ramas locales: por instrucción del usuario no se hace push, PR ni integración remota hasta que decida reanudar GitHub.
 
-Completar la base no significa que las funciones de autenticación, expedientes, OCR, recuperación o simulación estén listas. Se trabajan en orden y una fase por rama/tarea. El siguiente bloque funcional es autenticación y autorización. Como la base ya tiene una rama local pendiente de checks, se permite avanzar en una rama local dependiente de esa base; no se publica ni integra hasta que la rama de base pase los checks y se integre en `develop`.
+El desarrollo continúa en orden, con una fase por rama/tarea. Antes de extracción/OCR se cierra localmente la rama de expedientes y se verifica con PostgreSQL de pruebas aislado. Las pruebas no usan la base PostgreSQL habitual. La siguiente fase es extracción documental; todavía no se habilita análisis con LLM, RAG ni simulación.
 
 ## Fase 0 — Base
 - crear repositorio;
@@ -35,21 +35,24 @@ un usuario autenticado con rol administrativo puede entrar al dashboard. El regi
 
 Una cuenta nueva no recibe permisos de administración. El primer administrador local se habilita con el comando documentado en `backend/README.md` después de crear la cuenta. La UI se comprobó visualmente; las rutas se cubren con pruebas de API en PostgreSQL aislado.
 
+El perfil visible viene de la sesión real; editar identidad y guardar preferencias institucionales en el servidor todavía no están implementados.
+
 ---
 
 ## Fase 2 — Expedientes
-- crear expediente;
-- subir uno o varios archivos;
-- PDF;
-- DOCX;
-- imágenes;
-- almacenar en R2;
-- eliminar expediente.
+- [x] crear, consultar, editar y eliminar expedientes propios;
+- [x] subir y retirar varios archivos por expediente;
+- [x] aceptar PDF y formatos de imagen permitidos;
+- [x] validar tipo detectado y limitar cada archivo a 50 MB;
+- [x] almacenar en disco privado local durante desarrollo;
+- [x] preparar un disco R2 compatible con S3 configurable;
+- [ ] configurar y verificar con un bucket/credenciales R2 reales;
+- [x] probar recepción de un DOCX Office Open XML válido.
 
 Resultado:
 usuario gestiona solo sus propios expedientes.
 
-Estado: siguiente fase local. No aceptar archivos reales hasta aplicar validación estricta, almacenamiento privado y autorización por propietario.
+Estado: implementada y probada localmente en `funcionalidad/gestion-expedientes`. El contenido queda privado y solo hay descarga autenticada. R2 ya tiene adaptador, pero aún no se configuró ni probó un bucket. No hay extracción de texto, OCR, detección de páginas ni análisis; eso se implementa en la fase 3.
 
 ---
 
