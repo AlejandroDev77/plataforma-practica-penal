@@ -10,4 +10,5 @@ ai-service/.venv/
 ai-service/**/__pycache__/
 
 README.md
+!backend/database/README.md
 simulador_juridico_ia_arquitectura.md
