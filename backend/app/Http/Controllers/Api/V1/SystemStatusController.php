@@ -11,7 +11,7 @@ final class SystemStatusController extends Controller
     {
         return response()->json([
             'data' => [
-                'service' => 'praxis-penal-api',
+                'service' => 'jurissim-api',
                 'status' => 'available',
                 'version' => 'v1',
             ],

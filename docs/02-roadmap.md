@@ -21,14 +21,19 @@ frontend y backend arrancan localmente; el servicio IA ofrece únicamente su esq
 ---
 
 ## Fase 1 — Usuarios
-- registro;
-- login;
-- logout;
-- perfil;
-- autorización.
+- [x] registro con rol de menor privilegio;
+- [x] login y logout mediante sesión segura;
+- [x] consulta del perfil autenticado;
+- [x] sesión protegida y autorización por rol para el panel administrativo;
+- [x] recuperación y restablecimiento de contraseña;
+- [x] bootstrap del primer administrador desde consola, nunca desde el formulario.
+
+Estado: implementada y verificada localmente en `funcionalidad/autenticacion`; todavía no publicada ni integrada.
 
 Resultado:
-usuario autenticado puede entrar al dashboard.
+un usuario autenticado con rol administrativo puede entrar al dashboard. El registro público crea solo una cuenta básica, nunca concede permisos administrativos.
+
+Una cuenta nueva no recibe permisos de administración. El primer administrador local se habilita con el comando documentado en `backend/README.md` después de crear la cuenta. La UI se comprobó visualmente; las rutas se cubren con pruebas de API en PostgreSQL aislado.
 
 ---
 
@@ -43,6 +48,8 @@ usuario autenticado puede entrar al dashboard.
 
 Resultado:
 usuario gestiona solo sus propios expedientes.
+
+Estado: siguiente fase local. No aceptar archivos reales hasta aplicar validación estricta, almacenamiento privado y autorización por propietario.
 
 ---
 

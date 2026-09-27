@@ -32,6 +32,8 @@ No leas toda `docs/` salvo que sea necesario.
 - validar MIME/tamaño;
 - archivos privados;
 - authorization checks;
+- el registro nunca puede asignar roles administrativos ni permisos enviados por el navegador;
+- las rutas administrativas requieren sesión y rol autorizado; la autorización final de cada recurso se valida también en Laravel;
 - no exponer storage keys;
 - URLs firmadas;
 - sanitizar inputs;

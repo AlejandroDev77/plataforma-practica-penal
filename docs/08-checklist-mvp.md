@@ -9,7 +9,10 @@ El MVP está listo cuando:
 - [ ] Merge a `develop` después de que GitHub permita ejecutar los checks obligatorios.
 
 ## Usuario
-- [ ] registro/login funcionan;
+- [x] registro, login, logout y recuperación de contraseña usan sesión real;
+- [x] las rutas administrativas exigen sesión y rol autorizado;
+- [x] el registro asigna rol básico; el primer administrador se habilita por consola;
+- [ ] integrar fase de usuarios en `develop` después de resolver el bloqueo de GitHub;
 - [ ] usuario solo ve sus expedientes.
 
 ## Expediente
