@@ -18,8 +18,6 @@ class Expediente extends ModeloDominio
         'titulo',
         'descripcion',
         'numero_caso',
-        'estado',
-        'estado_procesamiento',
     ];
 
     protected function casts(): array

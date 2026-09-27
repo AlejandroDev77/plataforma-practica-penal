@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\V1\CurrentUserController;
+use App\Http\Controllers\Api\V1\ExpedienteArchivoController;
+use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\PasswordResetLinkController;
@@ -20,5 +22,14 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/me', CurrentUserController::class);
         Route::post('/logout', LogoutController::class);
+
+        Route::get('/expedientes', [ExpedienteController::class, 'index']);
+        Route::post('/expedientes', [ExpedienteController::class, 'store']);
+        Route::get('/expedientes/{expediente}', [ExpedienteController::class, 'show']);
+        Route::patch('/expedientes/{expediente}', [ExpedienteController::class, 'update']);
+        Route::delete('/expedientes/{expediente}', [ExpedienteController::class, 'destroy']);
+        Route::post('/expedientes/{expediente}/archivos', [ExpedienteArchivoController::class, 'store']);
+        Route::get('/expedientes/{expediente}/archivos/{archivo}/descarga', [ExpedienteArchivoController::class, 'download']);
+        Route::delete('/expedientes/{expediente}/archivos/{archivo}', [ExpedienteArchivoController::class, 'destroy']);
     });
 });

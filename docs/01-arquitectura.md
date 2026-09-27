@@ -27,7 +27,9 @@
 - pgvector (opcional y diferido hasta implementar recuperación vectorial)
 
 ### Archivos
-- Cloudflare R2 (diferido hasta implementar cargas)
+- Disco `local` privado para desarrollo nativo (`backend/storage/app/private`).
+- Cloudflare R2 disponible como disco S3-compatible opcional; necesita endpoint, bucket y credenciales propios.
+- No publicar buckets ni retornar rutas internas al frontend.
 
 ### Procesamiento
 - PyMuPDF
@@ -111,5 +113,8 @@ No mezclar lógica jurídica/IA compleja dentro de controladores Laravel.
 
 - La estructura de los tres proyectos existe.
 - La base inicial PostgreSQL de dominio está implementada y tiene pruebas locales; su integración por GitHub queda pendiente de que los checks requeridos puedan ejecutarse.
-- Registro/login conectados, gestión completa de expedientes, OCR/RAG y simulación todavía no se deben considerar implementados.
-- La siguiente fase funcional es autenticación y autorización; avanzar una fase por rama/tarea.
+- Autenticación, recuperación de contraseña y control de rol están implementados localmente; no se han publicado ni integrado.
+- CRUD de expedientes y gestión de archivos están implementados y probados localmente en una rama dependiente, con disco privado local como configuración por defecto.
+- R2 se conecta mediante el adaptador S3 de Flysystem cuando existan credenciales; la integración de cuenta/bucket aún no se ha probado.
+- OCR, extracción, RAG y simulación todavía no se deben considerar implementados.
+- La siguiente fase de producto es extracción/OCR; antes se debe cerrar y verificar la fase de expedientes en local.
