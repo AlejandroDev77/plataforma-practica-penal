@@ -2,7 +2,7 @@
 
 ## Estado
 
-El contrato, la validación de procedencia, la persistencia versionada y la revisión humana están implementados. Se acordó probar primero con un modelo local; el endpoint Ollama está desactivado por defecto. Todavía no existe un job de Laravel que genere análisis ni se conecta un proveedor externo. La suite Laravel de esta fase se ejecutó con éxito en la base aislada `jurissim_pruebas` (56 pruebas, 357 aserciones); no debe apuntarse a la base habitual `jurissim`.
+El contrato, la validación de procedencia, la persistencia versionada, la revisión humana y el job de Laravel para el modelo local están implementados. Ollama permanece desactivado por defecto y no se conecta ningún proveedor externo. La prueba de integración de Laravel debe ejecutarse únicamente contra la base aislada `jurissim_pruebas`; no debe apuntarse a la base habitual `jurissim`.
 
 ## Contrato de entrada
 
@@ -51,6 +51,19 @@ Cuando un productor interno autorizado ya tenga una salida estructurada, puede e
 Cada resultado crea una nueva versión en `analisis_expediente`, sus elementos normalizados, las referencias tipadas y una fila de `historial_procesamiento`. Las certezas permanecen cualitativas; no se convierten en porcentajes. Los elementos comienzan sin confirmar y `modelo_ia` queda nulo mientras no se configure un proveedor.
 
 El propietario consulta la versión más reciente con `GET /api/v1/expedientes/{id}/analisis`. Solo recibe citas con nombre del documento, localizador y extracto cuando la página sigue disponible y el texto coincide; los IDs internos de página no se exponen. La ruta está dentro de la sesión Sanctum y el ámbito del expediente del usuario.
+
+El propietario inicia un análisis indicando las páginas concretas que quiere incluir:
+
+```http
+POST /api/v1/expedientes/{id}/analisis
+Content-Type: application/json
+
+{"page_ids": [123, 124]}
+```
+
+La API comprueba que todas las páginas pertenecen al expediente autenticado, sean legibles y no superen 10 páginas ni 40.000 caracteres. Se responde `202 Accepted` con un `process_id`; `GET /api/v1/expedientes/{id}/analisis/procesos/{process_id}` informa si está pendiente, procesándose, completado o falló. No se aceptan IDs de propietario del cliente y un expediente no puede tener dos análisis simultáneos.
+
+El job envía al servicio de inteligencia únicamente los textos y localizadores de las páginas seleccionadas, nunca datos de cuenta ni rutas privadas. Laravel solo acepta el servicio HTTP de loopback en el puerto `8100` (`localhost`, `127.0.0.1` o `::1`) y no sigue redirecciones; el servicio requiere el token compartido, Ollama sigue bajo control local y los textos no se escriben en logs. Un resultado validado se persiste en la misma fila de historial que abrió la solicitud. El worker local se ejecuta con `php artisan queue:work --tries=3 --timeout=600`.
 
 La interfaz administrativa del detalle permite registrar `aprobado` o `requiere_cambios`; solicitar cambios exige observación. La aprobación solo se habilita con al menos una cita vigente y todas verificables. Cada decisión añade una fila en `revisiones_analisis`; no se sobrescribe el historial.
 

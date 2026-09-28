@@ -38,6 +38,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/expedientes/{expediente}/archivos/{archivo}/paginas', [ExpedienteArchivoController::class, 'pages']);
         Route::delete('/expedientes/{expediente}/archivos/{archivo}', [ExpedienteArchivoController::class, 'destroy']);
         Route::get('/expedientes/{expediente}/analisis', [AnalisisExpedienteController::class, 'index']);
+        Route::post('/expedientes/{expediente}/analisis', [AnalisisExpedienteController::class, 'store']);
+        Route::get('/expedientes/{expediente}/analisis/procesos/{proceso}', [AnalisisExpedienteController::class, 'processStatus']);
         Route::post('/expedientes/{expediente}/analisis/{analisis}/revisiones', [AnalisisExpedienteController::class, 'storeRevision']);
 
         Route::get('/tipos-audiencia', [TipoAudienciaController::class, 'index']);
