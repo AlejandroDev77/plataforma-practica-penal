@@ -98,13 +98,10 @@ la IA recupera solo fragmentos relevantes con referencias.
 ---
 
 ## Fase 6 — Motor de audiencia
-Crear:
-- estados;
-- turnos;
-- roles;
-- memoria;
-- reglas;
-- orquestador.
+- [x] controlar inicio y avance usando etapas y transiciones configuradas;
+- [ ] asignar turnos y limitar acciones válidas por rol;
+- [ ] conservar memoria de intervenciones con fuentes;
+- [ ] exponer creación y avance mediante API autorizada.
 
 MVP:
 medidas cautelares.

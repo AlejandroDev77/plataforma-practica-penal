@@ -23,12 +23,13 @@ El MVP está listo cuando:
 - [x] extrae texto de PDF digital por página;
 - [x] extrae texto DOCX y avisa que no puede asegurar paginación física;
 - [x] OCR selectivo está implementado para páginas escaneadas e imágenes;
-- [ ] instalar Tesseract/idioma español y verificar OCR con un escaneo sintético;
+- [x] instalar Tesseract/idioma español y verificar OCR con un escaneo sintético;
 - [x] conserva archivo, página/localizador, uso de OCR y legibilidad.
 
 ## Análisis
 - [x] contrato Pydantic acotado con afirmaciones y extractos de origen;
 - [x] referencias verificadas contra las páginas entregadas al lote;
+- [x] persistencia versionada y revisión humana del propietario;
 - [ ] genera resumen;
 - [ ] detecta participantes;
 - [ ] detecta delitos;
@@ -43,6 +44,7 @@ El MVP está listo cuando:
 
 ## Audiencia
 - [ ] medidas cautelares;
+- [x] avance controlado por transiciones configuradas;
 - [ ] usuario = defensa;
 - [ ] juez IA;
 - [ ] fiscal IA;
