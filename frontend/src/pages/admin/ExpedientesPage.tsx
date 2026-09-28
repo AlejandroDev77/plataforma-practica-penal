@@ -144,7 +144,7 @@ export function ExpedientesPage() {
       {result.isSuccess && cases.length === 0 ? <div className="empty-state"><Search size={29} strokeWidth={1.4} /><h3>{deferredSearch ? 'No encontramos coincidencias' : 'Su archivo empieza aquí'}</h3><p>{deferredSearch ? 'Pruebe otro título o referencia.' : 'Cree un expediente y añada documentos cuando esté listo.'}</p>{deferredSearch ? <button className="text-link" onClick={() => setSearch('')}>Limpiar búsqueda</button> : <button className="btn btn-primary" onClick={() => setEditing('new')}><FilePlus2 size={16} />Crear el primer expediente</button>}</div> : null}
       {result.isFetching && !result.isPending ? <p className="page-note" role="status">Actualizando resultados…</p> : null}
     </section>
-    <p className="page-note">Los archivos se guardan en el almacenamiento privado configurado. La extracción de texto y OCR se incorporarán en la fase de procesamiento.</p>
+    <p className="page-note">Los archivos se guardan en privado. La extracción por página está habilitada; el OCR de escaneos depende de Tesseract en este equipo.</p>
 
     {activeEditor && <CaseEditor record={activeEditor} onClose={closeEditor} />}
     {removing && <Modal title="Eliminar expediente" description="Esta acción elimina el expediente y solicita retirar todos sus archivos privados." onClose={() => setRemoving(null)}>

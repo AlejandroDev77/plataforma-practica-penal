@@ -1,5 +1,19 @@
 import { httpClient } from '../../../shared/api/http-client'
 import type { CaseFile, FileExtractionPage, LegalCase, Paginated } from '../model/case'
+import type { AnalysisReviewDecision, CaseAnalysis } from '../model/case-analysis'
+
+export async function getCaseAnalysis(id: number): Promise<CaseAnalysis | null> {
+  const response = await httpClient.get<{ data: CaseAnalysis | null }>(`/api/v1/expedientes/${id}/analisis`)
+  return response.data.data
+}
+
+export async function reviewCaseAnalysis(caseId: number, analysisId: number, decision: AnalysisReviewDecision, observation: string): Promise<CaseAnalysis> {
+  const response = await httpClient.post<{ data: CaseAnalysis }>(
+    `/api/v1/expedientes/${caseId}/analisis/${analysisId}/revisiones`,
+    { decision, observacion: observation || null },
+  )
+  return response.data.data
+}
 
 export async function listCases(search: string, page = 1): Promise<Paginated<LegalCase>> {
   const response = await httpClient.get<Paginated<LegalCase>>('/api/v1/expedientes', {

@@ -45,7 +45,7 @@ class Finding(StrictModel):
 
 class ParticipantFinding(StrictModel):
     name_as_written: str = Field(min_length=1, max_length=255)
-    role_as_written: str | None = Field(default=None, max_length=120)
+    role_as_written: str | None = Field(default=None, max_length=80)
     description: str | None = Field(default=None, max_length=2_000)
     certainty: Certainty
     sources: list[SourceReference] = Field(min_length=1, max_length=10)
@@ -69,7 +69,7 @@ class FactFinding(StrictModel):
 
 class EvidenceFinding(StrictModel):
     name_as_written: str = Field(min_length=1, max_length=255)
-    kind_as_written: str | None = Field(default=None, max_length=120)
+    kind_as_written: str | None = Field(default=None, max_length=80)
     description: str | None = Field(default=None, max_length=2_000)
     status_as_written: str | None = Field(default=None, max_length=200)
     certainty: Certainty

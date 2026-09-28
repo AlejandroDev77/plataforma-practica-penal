@@ -81,6 +81,8 @@ Si se aplicaron y se usa rollback, incluir su ruta junto a la principal, por eje
 - `orden` es único por simulación. El futuro motor debe asignarlo bajo bloqueo de fila/transacción; no usar MAX + 1 sin protección.
 - Las etapas/transiciones son un catálogo inicial configurable, no un motor procesal implementado.
 - `paginas_expediente.localizador` guarda la página de PDF/imagen o la nota “documento completo” en archivos cuya paginación no se puede obtener, como DOCX.
+- `revisiones_analisis` conserva decisiones humanas append-only, ligadas al mismo análisis y expediente. Aprobar exige que todas las citas sigan disponibles y verificables.
+- Al retirar un archivo privado se purgan las versiones de análisis que lo citan, junto con hallazgos y revisiones derivadas.
 - La lectura de PDF/DOCX/imagen se realiza en un trabajo de cola. Para ejecutarla de forma local, arrancar FastAPI y luego `php artisan queue:work --tries=3 --timeout=600`; configurar el mismo token interno en ambos `.env`. El worker no reemplaza ni usa `jurissim` para pruebas.
 
 ## Git
