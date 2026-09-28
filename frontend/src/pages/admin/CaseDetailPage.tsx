@@ -9,6 +9,7 @@ import { casesQueryKey, useCase, useCaseFilePages } from '../../features/cases/m
 import type { CaseFile, LegalCase, ProcessingStatus } from '../../features/cases/model/case'
 import { getAuthErrorMessage } from '../../features/auth/api/auth-api'
 import { CaseAnalysisSection } from '../../features/cases/components/CaseAnalysisSection'
+import type { SelectedAnalysisPage } from '../../features/cases/model/case-analysis'
 import { shortDate } from '../../shared/lib/admin-utils'
 
 const statusLabel: Record<LegalCase['status'], string> = {
@@ -40,9 +41,21 @@ export function CaseDetailPage() {
   const [downloadId, setDownloadId] = useState<number | null>(null)
   const [expandedFileId, setExpandedFileId] = useState<number | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSelection, setPageSelection] = useState<{ caseId: number; pages: SelectedAnalysisPage[] }>(() => ({ caseId: id, pages: [] }))
   const result = useCase(id)
   const record = result.data
   const pages = useCaseFilePages(id, expandedFileId, page, expandedFileId !== null)
+  const selectedPages = pageSelection.caseId === id ? pageSelection.pages : []
+  const selectedPageIds = new Set(selectedPages.map((item) => item.id))
+  const selectedCharacters = selectedPages.reduce((total, item) => total + item.characters, 0)
+
+  function setSelectedPages(next: SelectedAnalysisPage[] | ((current: SelectedAnalysisPage[]) => SelectedAnalysisPage[])) {
+    setPageSelection((current) => {
+      const currentPages = current.caseId === id ? current.pages : []
+
+      return { caseId: id, pages: typeof next === 'function' ? next(currentPages) : next }
+    })
+  }
 
   const upload = useMutation({
     mutationFn: () => uploadCaseFiles(id, files),
@@ -60,12 +73,13 @@ export function CaseDetailPage() {
 
   const remove = useMutation({
     mutationFn: (fileId: number) => deleteCaseFile(id, fileId),
-    onSuccess: async () => {
+    onSuccess: async (_removed, fileId) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: [...casesQueryKey, id] }),
         queryClient.invalidateQueries({ queryKey: casesQueryKey }),
       ])
-      if (expandedFileId === removing?.id) setExpandedFileId(null)
+      if (expandedFileId === fileId) setExpandedFileId(null)
+      setSelectedPages((current) => current.filter((item) => item.fileId !== fileId))
       setRemoving(null)
       toast.success('Archivo eliminado del expediente.')
     },
@@ -86,6 +100,36 @@ export function CaseDetailPage() {
   function toggleExtraction(fileId: number) {
     setExpandedFileId((current) => current === fileId ? null : fileId)
     setPage(1)
+  }
+
+  function toggleAnalysisPage(file: CaseFile, page: { id: number; locator: string; text: string | null; is_readable: boolean }) {
+    if (selectedPageIds.has(page.id)) {
+      setSelectedPages((current) => current.filter((item) => item.id !== page.id))
+
+      return
+    }
+
+    const text = page.text ?? ''
+    const characters = Array.from(text).length
+    if (!page.is_readable || text.trim() === '') return
+    if (selectedPages.length >= 10) {
+      toast.error('Puedes incluir hasta 10 páginas por análisis.')
+
+      return
+    }
+    if (selectedCharacters + characters > 40_000) {
+      toast.error('Las páginas seleccionadas no pueden superar 40.000 caracteres.')
+
+      return
+    }
+
+    setSelectedPages((current) => [...current, {
+      id: page.id,
+      fileId: file.id,
+      fileName: file.name,
+      locator: page.locator,
+      characters,
+    }])
   }
 
   if (!Number.isSafeInteger(id) || id < 1) return <div className="empty-state"><FileText size={30} /><h1>Expediente no disponible</h1><p>La referencia del expediente no es válida.</p><Link className="btn btn-secondary" to="/expedientes"><ArrowLeft size={16} />Volver a expedientes</Link></div>
@@ -151,10 +195,31 @@ export function CaseDetailPage() {
           {file.processing_message && <p className="file-processing-message" role="status">{file.processing_message}</p>}
           {expandedFileId === file.id && <section id={`extraction-${file.id}`} className="extraction-panel" aria-label={`Texto extraído de ${file.name}`}>
             {pages.isPending ? <p className="muted" role="status">Cargando texto extraído…</p> : pages.isError ? <div className="inline-error" role="alert"><p>{getAuthErrorMessage(pages.error)}</p><button className="btn btn-secondary" onClick={() => void pages.refetch()}>Reintentar</button></div> : pages.data?.data.length ? <>
-              {pages.data.data.map((item) => <article className="extraction-page" key={item.id}>
-                <div className="extraction-page-heading"><strong>{item.locator}</strong>{item.used_ocr && <span>Reconocido desde imagen</span>}</div>
-                {item.text ? <p>{item.text}</p> : <p className="muted">No se encontró texto legible en esta página.</p>}
-              </article>)}
+              {pages.data.data.map((item) => {
+                const selected = selectedPageIds.has(item.id)
+                const characters = Array.from(item.text ?? '').length
+                const readable = item.is_readable && Boolean(item.text?.trim())
+                const limitReached = !selected && selectedPages.length >= 10
+                const sizeExceeded = !selected && selectedCharacters + characters > 40_000
+
+                return <article className="extraction-page" key={item.id}>
+                  <div className="extraction-page-heading">
+                    <strong>{item.locator}</strong>
+                    <label className={`extraction-page-selector${selected ? ' is-selected' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        disabled={!selected && (!readable || limitReached || sizeExceeded)}
+                        aria-label={`Incluir ${item.locator} de ${file.name} en el análisis`}
+                        onChange={() => toggleAnalysisPage(file, item)}
+                      />
+                      <span>{selected ? 'Incluida' : !readable ? 'Sin texto legible' : limitReached ? 'Límite alcanzado' : sizeExceeded ? 'Supera el límite' : 'Incluir en análisis'}</span>
+                    </label>
+                    {item.used_ocr && <span>Reconocido desde imagen</span>}
+                  </div>
+                  {item.text ? <p>{item.text}</p> : <p className="muted">No se encontró texto legible en esta página.</p>}
+                </article>
+              })}
               {pages.data.meta.last_page > 1 && <nav className="extraction-pagination" aria-label="Páginas del texto extraído">
                 <button className="btn btn-secondary" disabled={!pages.data.links.prev} onClick={() => setPage((current) => Math.max(1, current - 1))}><ChevronLeft size={15} />Anterior</button>
                 <span>Página {pages.data.meta.current_page} de {pages.data.meta.last_page}</span>
@@ -166,7 +231,12 @@ export function CaseDetailPage() {
       </section>
     </div>
 
-    <CaseAnalysisSection caseId={id} />
+    <CaseAnalysisSection
+      key={id}
+      caseId={id}
+      selectedPages={selectedPages}
+      onClearSelection={() => setSelectedPages([])}
+    />
 
     {removing && <Modal title="Retirar documento" description="Se elimina el archivo privado y los análisis generados que lo citan, para no conservar resultados derivados del documento." onClose={() => setRemoving(null)}>
       <div className="modal-body"><p>¿Eliminar <strong>{removing.name}</strong>? Esta acción no se puede deshacer desde la aplicación.</p><div className="modal-actions">

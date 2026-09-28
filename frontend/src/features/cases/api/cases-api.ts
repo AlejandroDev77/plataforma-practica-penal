@@ -1,9 +1,24 @@
 import { httpClient } from '../../../shared/api/http-client'
 import type { CaseFile, FileExtractionPage, LegalCase, Paginated } from '../model/case'
-import type { AnalysisReviewDecision, CaseAnalysis } from '../model/case-analysis'
+import type { AnalysisProcess, AnalysisProcessStatus, AnalysisReviewDecision, CaseAnalysis } from '../model/case-analysis'
 
 export async function getCaseAnalysis(id: number): Promise<CaseAnalysis | null> {
   const response = await httpClient.get<{ data: CaseAnalysis | null }>(`/api/v1/expedientes/${id}/analisis`)
+  return response.data.data
+}
+
+export async function startCaseAnalysis(id: number, pageIds: number[]): Promise<{ process_id: number; status: AnalysisProcessStatus }> {
+  const response = await httpClient.post<{ data: { process_id: number; status: AnalysisProcessStatus } }>(
+    `/api/v1/expedientes/${id}/analisis`,
+    { page_ids: pageIds },
+  )
+  return response.data.data
+}
+
+export async function getCaseAnalysisProcess(id: number, processId: number): Promise<AnalysisProcess> {
+  const response = await httpClient.get<{ data: AnalysisProcess }>(
+    `/api/v1/expedientes/${id}/analisis/procesos/${processId}`,
+  )
   return response.data.data
 }
 

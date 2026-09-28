@@ -13,7 +13,7 @@ FastAPI recibe únicamente páginas extraídas que Laravel haya seleccionado par
 - identificadores de página únicos en cada lote;
 - campos inesperados rechazados por Pydantic.
 
-Estos topes evitan mandar un expediente entero en una sola solicitud. Se revisarán junto al modelo/contexto seleccionado antes de habilitar la ejecución real.
+Estos topes evitan mandar un expediente entero en una sola solicitud. Aumentarlos requiere evaluar de nuevo el modelo, su contexto y los tiempos de la cola local.
 
 ## Salida estructurada
 
@@ -52,7 +52,7 @@ Cada resultado crea una nueva versión en `analisis_expediente`, sus elementos n
 
 El propietario consulta la versión más reciente con `GET /api/v1/expedientes/{id}/analisis`. Solo recibe citas con nombre del documento, localizador y extracto cuando la página sigue disponible y el texto coincide; los IDs internos de página no se exponen. La ruta está dentro de la sesión Sanctum y el ámbito del expediente del usuario.
 
-El propietario inicia un análisis indicando las páginas concretas que quiere incluir:
+El propietario inicia un análisis indicando las páginas concretas que quiere incluir. En el detalle administrativo, solo se pueden marcar páginas legibles; la interfaz muestra el recuento de páginas y caracteres, el avance del proceso y permite reintentar sin exponer el texto en el almacenamiento de sesión:
 
 ```http
 POST /api/v1/expedientes/{id}/analisis

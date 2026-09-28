@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Check, CircleHelp, FileSearch, History, LoaderCircle, ShieldCheck } from 'lucide-react'
 import { getAuthErrorMessage } from '../../auth/api/auth-api'
-import { reviewCaseAnalysis } from '../api/cases-api'
-import { casesQueryKey, useCaseAnalysis } from '../model/use-cases'
-import type { AnalysisCitation, AnalysisFinding, AnalysisReviewDecision, CaseAnalysis } from '../model/case-analysis'
+import { reviewCaseAnalysis, startCaseAnalysis } from '../api/cases-api'
+import { casesQueryKey, useCaseAnalysis, useCaseAnalysisProcess } from '../model/use-cases'
+import type { AnalysisCitation, AnalysisFinding, AnalysisProcessStatus, AnalysisReviewDecision, CaseAnalysis, SelectedAnalysisPage } from '../model/case-analysis'
 import { shortDate } from '../../../shared/lib/admin-utils'
 
 const decisionLabel: Record<AnalysisReviewDecision, string> = {
@@ -55,13 +55,68 @@ function DetailGroup({ title, items, label, detail }: {
   </section>
 }
 
-export function CaseAnalysisSection({ caseId }: { caseId: number }) {
+function readStoredProcessId(caseId: number): number | null {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const value = Number(window.sessionStorage.getItem(`jurissim:analysis-process:${caseId}`))
+    return Number.isSafeInteger(value) && value > 0 ? value : null
+  } catch {
+    return null
+  }
+}
+
+function processLabel(status: AnalysisProcessStatus): string {
+  return {
+    pendiente: 'En espera para comenzar',
+    procesando: 'Leyendo las páginas seleccionadas en este equipo',
+    procesado: 'Listo para revisión',
+    error: 'No se pudo completar la lectura',
+  }[status]
+}
+
+export function CaseAnalysisSection({ caseId, selectedPages, onClearSelection }: {
+  caseId: number
+  selectedPages: SelectedAnalysisPage[]
+  onClearSelection: () => void
+}) {
   const queryClient = useQueryClient()
   const analysisQuery = useCaseAnalysis(caseId)
+  const [processId, setProcessId] = useState<number | null>(() => readStoredProcessId(caseId))
   const [observation, setObservation] = useState('')
+  const processQuery = useCaseAnalysisProcess(caseId, processId)
+  const completedProcessId = useRef<number | null>(null)
   const analysis = analysisQuery.data
   const citations = analysis ? citationsOf(analysis) : []
   const citationsVerifiable = citations.length > 0 && citations.every((citation) => citation.available)
+  const selectedCharacters = selectedPages.reduce((total, item) => total + item.characters, 0)
+  const status = processQuery.data?.status
+  const processIsActive = status === 'pendiente' || status === 'procesando'
+
+  useEffect(() => {
+    if (status !== 'procesado' || processId === null || completedProcessId.current === processId) return
+
+    completedProcessId.current = processId
+    void queryClient.invalidateQueries({ queryKey: [...casesQueryKey, caseId, 'analisis'] })
+  }, [caseId, processId, queryClient, status])
+
+  useEffect(() => {
+    if (processId === null || typeof window === 'undefined') return
+
+    try {
+      window.sessionStorage.setItem(`jurissim:analysis-process:${caseId}`, String(processId))
+    } catch {
+      // El seguimiento en pantalla sigue funcionando si el navegador bloquea el almacenamiento de sesión.
+    }
+  }, [caseId, processId])
+
+  const generate = useMutation({
+    mutationFn: () => startCaseAnalysis(caseId, selectedPages.map((item) => item.id)),
+    onSuccess: ({ process_id }) => {
+      completedProcessId.current = null
+      setProcessId(process_id)
+    },
+  })
 
   const review = useMutation({
     mutationFn: (decision: AnalysisReviewDecision) => reviewCaseAnalysis(caseId, analysis?.id ?? 0, decision, observation.trim()),
@@ -84,11 +139,39 @@ export function CaseAnalysisSection({ caseId }: { caseId: number }) {
       </span>}
     </div>
 
+    <section className="analysis-request" aria-label="Iniciar análisis de páginas seleccionadas">
+      <div className="analysis-request-copy">
+        <p className="eyebrow">PÁGINAS PARA LA LECTURA</p>
+        <p>Marca páginas legibles en la sección Documentación. Solo se enviarán las seleccionadas; puedes incluir hasta 10 páginas y 40.000 caracteres.</p>
+        <span className="analysis-selection-count" aria-live="polite" role="status">
+          {selectedPages.length} de 10 páginas · {selectedCharacters.toLocaleString('es-BO')} de 40.000 caracteres
+        </span>
+      </div>
+      <div className="analysis-request-actions">
+        <button className="btn btn-secondary" disabled={selectedPages.length === 0} onClick={onClearSelection}>Limpiar selección</button>
+        <button
+          className="btn btn-primary"
+          disabled={selectedPages.length === 0 || generate.isPending || processIsActive}
+          onClick={() => generate.mutate()}
+        >
+          {generate.isPending || processIsActive ? <><LoaderCircle size={15} className="spin" />{processIsActive ? 'En curso…' : 'Enviando…'}</> : <><FileSearch size={15} />{analysis ? 'Generar nueva versión' : 'Generar análisis'}</>}
+        </button>
+      </div>
+    </section>
+
+    {generate.isError && <p className="analysis-error-text" role="alert">{getAuthErrorMessage(generate.error)}</p>}
+    {processId !== null && processQuery.isPending && <div className="analysis-generation-state" role="status" aria-live="polite"><LoaderCircle size={16} className="spin" />Consultando el avance del análisis…</div>}
+    {processId !== null && processQuery.isError && <div className="analysis-generation-error" role="alert"><p>No pudimos consultar el avance. La solicitud podría seguir en curso.</p><button className="btn btn-secondary" onClick={() => void processQuery.refetch()}>Consultar de nuevo</button></div>}
+    {status && <div className={`analysis-generation-state${status === 'error' ? ' is-error' : status === 'procesado' ? ' is-complete' : ''}`} role={status === 'error' ? 'alert' : 'status'} aria-live="polite">
+      {processIsActive ? <LoaderCircle size={16} className="spin" /> : status === 'error' ? <AlertTriangle size={16} /> : <Check size={16} />}
+      <div><strong>{processLabel(status)}</strong><p>{status === 'error' ? 'Comprueba que el servicio local esté activo y vuelve a intentarlo.' : status === 'procesado' ? 'El resultado quedó guardado. Revisa sus referencias antes de aprobarlo.' : 'El análisis puede tardar unos minutos; puedes permanecer en esta página.'}</p></div>
+    </div>}
+
     {analysisQuery.isPending && <div className="analysis-state" role="status"><LoaderCircle size={17} className="spin" />Consultando el análisis vinculado al expediente…</div>}
     {analysisQuery.isError && <div className="analysis-error" role="alert"><p>{getAuthErrorMessage(analysisQuery.error)}</p><button className="btn btn-secondary" onClick={() => void analysisQuery.refetch()}>Reintentar</button></div>}
     {!analysisQuery.isPending && !analysisQuery.isError && !analysis && <div className="analysis-empty">
       <span><FileSearch size={21} /></span>
-      <div><strong>Aún no hay un análisis disponible.</strong><p>La extracción documental está lista, pero falta acordar el tratamiento del contenido antes de generar interpretaciones. Aquí no se muestran resultados simulados.</p></div>
+      <div><strong>Aún no hay un análisis disponible.</strong><p>Selecciona una o varias páginas legibles en Documentación y genera una lectura para revisar sus afirmaciones junto con las fuentes.</p></div>
     </div>}
 
     {analysis && <>
