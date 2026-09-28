@@ -23,7 +23,7 @@ El MVP está listo cuando:
 - [x] extrae texto de PDF digital por página;
 - [x] extrae texto DOCX y avisa que no puede asegurar paginación física;
 - [x] OCR selectivo está implementado para páginas escaneadas e imágenes;
-- [x] instalar Tesseract/idioma español y verificar OCR con un escaneo sintético;
+- [x] instalar Tesseract/idioma español, dejar su configuración local persistente y verificar OCR con un escaneo sintético (PR #8);
 - [x] conserva archivo, página/localizador, uso de OCR y legibilidad.
 
 ## Análisis
@@ -45,7 +45,7 @@ El MVP está listo cuando:
 ## Audiencia
 - [ ] medidas cautelares;
 - [x] avance controlado por transiciones configuradas;
-- [x] API autenticada limita las simulaciones al propietario y exige análisis aprobado;
+- [x] API autenticada limita las simulaciones al propietario, exige análisis aprobado y permite registrar intervenciones de texto (PR #10–#11);
 - [x] usuario = defensa al crear la simulación;
 - [ ] juez IA;
 - [ ] fiscal IA;

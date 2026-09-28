@@ -2,9 +2,9 @@
 
 ## Estado y regla de avance
 
-Las fases de base de datos, autenticación, gestión de expedientes y extracción están integradas en `develop` mediante los PR #1–#4; la persistencia y revisión del análisis se integraron mediante PR #7. Los checks requeridos de GitHub pasaron antes de cada merge. `main` no se ha modificado.
+La base, autenticación, expedientes y extracción están integrados mediante los PR #1–#4; el análisis versionado, la revisión humana y sus actualizaciones, incluida la configuración persistente de OCR, mediante los PR #5–#8; el motor de transiciones, la API autenticada de simulaciones y los turnos configurables mediante los PR #9–#11. Los checks requeridos pasaron antes de cada merge. `main` no se ha modificado.
 
-El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis y la API base de simulaciones ya están integrados; todavía no se habilitan RAG ni llamadas a LLM. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
+El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis, la API base de simulaciones y el control de turnos de texto por rol ya están integrados; todavía no se habilitan RAG ni llamadas a LLM. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
 
 ## Fase 0 — Base
 - crear repositorio;
@@ -66,7 +66,7 @@ Estado: implementada, probada e integrada en `develop` mediante PR #3. El conten
 - [x] verificar OCR real en español sobre un escaneo sintético con Tesseract 5.5.0;
 - [x] dejar el ejecutable Tesseract y el modelo `spa` configurados de forma persistente en el entorno local.
 
-Estado: pipeline y pruebas automáticas integrados en `develop` mediante PR #4. Tesseract 5.5.0 está instalado en Windows; `spa` y `eng` se guardaron en `%LOCALAPPDATA%\JURISSIM\tessdata`, y el `.env` local de FastAPI configura tanto el ejecutable como los modelos sin modificar el `PATH` global. Un escaneo sintético reconoció texto en español sin advertencias. DOCX muestra el documento completo porque su paginación física no está disponible en esta extracción.
+Estado: pipeline y pruebas automáticas integrados en `develop` mediante PR #4. La configuración persistente de OCR en español se incorporó en PR #8. Tesseract 5.5.0 está instalado en Windows; `spa` y `eng` se guardaron en `%LOCALAPPDATA%\JURISSIM\tessdata`, y el `.env` local de FastAPI configura tanto el ejecutable como los modelos sin modificar el `PATH` global. Un escaneo sintético reconoció texto en español sin advertencias. DOCX muestra el documento completo porque su paginación física no está disponible en esta extracción.
 
 El procesamiento funciona de forma nativa, sin Docker: el worker Laravel entrega el archivo privado a FastAPI con token, PyMuPDF/python-docx extraen texto y las páginas/localizadores y estados se guardan en PostgreSQL. FastAPI no persiste copias del expediente ni llama a LLM.
 
@@ -102,14 +102,19 @@ la IA recupera solo fragmentos relevantes con referencias.
 - [x] configurar turnos por etapa, validar el rol del usuario al registrar intervenciones de texto y no avanzar mientras queden turnos configurados;
 - [ ] definir actos procesales específicos permitidos por rol, sujetos a revisión jurídica;
 - [ ] conservar memoria de intervenciones con fuentes;
-- [x] exponer creación, consulta y avance mediante API autenticada y limitada al propietario.
+- [x] exponer creación, consulta, registro de intervenciones y avance mediante API autenticada y limitada al propietario.
 
 MVP:
 medidas cautelares.
 
+Estado: los PR #9–#11 integraron el avance por transiciones activas, la API limitada al propietario y el registro de intervenciones de texto bajo turnos configurables por rol. No se precargaron turnos jurídicos: requieren revisión del equipo competente. No hay agentes ni memoria conversacional funcional con fuentes; el siguiente trabajo jurídico depende de definir y revisar esas reglas.
+
 ---
 
 ## Fase 7 — Simulación por texto
+
+Estado: la API de turnos e intervenciones de texto ya existe, pero no hay respuestas de juez/fiscal generadas por IA ni interfaz de chat funcional.
+
 Usuario:
 - abogado defensor.
 
