@@ -45,7 +45,8 @@ El MVP está listo cuando:
 ## Audiencia
 - [ ] medidas cautelares;
 - [x] avance controlado por transiciones configuradas;
-- [ ] usuario = defensa;
+- [x] API autenticada limita las simulaciones al propietario y exige análisis aprobado;
+- [x] usuario = defensa al crear la simulación;
 - [ ] juez IA;
 - [ ] fiscal IA;
 - [ ] turnos controlados;
