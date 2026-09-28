@@ -1,6 +1,6 @@
 # Motor de simulación
 
-Estado: especificación futura. La base de datos contiene catálogos y estructuras iniciales; el orquestador, agentes y reglas procesales aún no están implementados.
+Estado: el catálogo de etapas y transiciones está sembrado para medidas cautelares. El avance determinista ya se controla en Laravel: inicia en la única etapa inicial activa, sigue transiciones activas del tipo de audiencia y finaliza al intentar avanzar desde la etapa marcada como final. Aún no existen endpoints de simulación, asignación de turnos por rol, memoria conversacional ni agentes; no se genera texto ni se llama a un modelo.
 
 ## Objetivo
 Controlar la audiencia; el LLM NO controla el flujo completo.
@@ -31,6 +31,8 @@ Debe conocer:
 - contexto del expediente;
 - historial.
 
+El servicio `App\Services\Simulaciones\AvanzarEtapaAudiencia` es la primera pieza del orquestador. Bloquea la fila de la simulación durante cada avance para evitar transiciones concurrentes. Si una etapa tiene varias salidas activas, exige que quien lo invoque indique una de esas salidas; no permite saltar a etapas arbitrarias. La autorización de propiedad corresponde al controlador que lo invoque y todavía no hay uno.
+
 ## Estado MVP
 
 ```text
@@ -43,7 +45,7 @@ OPENING
 -> CLOSED
 ```
 
-El equipo jurídico puede cambiar estos estados.
+El equipo jurídico puede ajustar etapas y transiciones en los catálogos. La secuencia sembrada para medidas cautelares es una configuración inicial del producto, no una certificación jurídica de la secuencia procesal.
 
 ## Regla
 Un agente NO puede:
