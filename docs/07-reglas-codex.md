@@ -68,7 +68,7 @@ git switch -c funcionalidad/base-de-datos
 - Tipos: `funcionalidad/`, `correccion/`, `mejora/`, `refactorizacion/`,
   `prueba/`, `documentacion/`, `configuracion/`.
 - Al terminar, revisar el diff y añadir solo archivos de la tarea. Hacer commits locales; el push con upstream y el PR a `develop` se realizan cuando la publicación esté autorizada.
-- Si el bloqueo de facturación de GitHub impide ejecutar Actions, conservar el trabajo local y no omitir ni desactivar checks. Estado actual: el usuario confirmó el desbloqueo y Actions ejecutó correctamente los checks de los PR #1–#4.
+- Si el bloqueo de facturación de GitHub impide ejecutar Actions, conservar el trabajo local y no omitir ni desactivar checks. Estado actual: el usuario confirmó el desbloqueo; los checks requeridos pasaron antes de integrar los PR hasta el #11.
 - La rama existente `funcionalidad/analisis-expedientes` se sincroniza con `origin/develop` antes de abrir su PR; no se crea una rama sustituta.
 - Integrar en `develop` solo cuando la rama esté validada y los checks requeridos estén verdes; no hacer merge local como atajo a protecciones remotas.
 - No incluir cambios ajenos en el commit, hacer merge automático a `main`,

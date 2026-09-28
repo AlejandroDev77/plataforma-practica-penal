@@ -117,6 +117,7 @@ No mezclar lógica jurídica/IA compleja dentro de controladores Laravel.
 - CRUD de expedientes y gestión de archivos privados están probados e integrados en `develop` mediante PR #3; el disco privado local es la configuración por defecto.
 - R2 se conecta mediante el adaptador S3 de Flysystem cuando existan credenciales; la integración de cuenta/bucket aún no se ha probado.
 - La extracción de PDF digital, DOCX e imágenes está integrada en `develop` mediante PR #4, con cola Laravel, API FastAPI interna y consulta autenticada del texto por páginas.
-- OCR tiene manejo selectivo y límites. Tesseract 5.5.0 y los modelos `spa`/`eng` están configurados localmente; un escaneo sintético se reconoció sin advertencias.
-- El contrato Pydantic, la persistencia versionada y la revisión humana del análisis estructurado están integrados en `develop` mediante PR #7. Aún no hay proveedor/modelo acordado ni llamadas LLM; RAG y simulación siguen pendientes.
-- El bloqueo de facturación de GitHub se resolvió y Actions ya ejecuta los checks. El flujo activo es rama de trabajo → PR a `develop` → merge cuando pasen los checks; `main` permanece sin cambios.
+- OCR tiene manejo selectivo y límites. Tesseract 5.5.0 y los modelos `spa`/`eng` están configurados localmente; la configuración persistente quedó documentada en PR #8 y un escaneo sintético se reconoció sin advertencias.
+- El contrato Pydantic, la persistencia versionada y la revisión humana del análisis estructurado están integrados en `develop` mediante PR #5 y #7. Aún no hay proveedor/modelo acordado ni llamadas LLM.
+- Los PR #9–#11 integraron el catálogo de etapas y transiciones, la API autenticada de simulaciones y los turnos configurables por rol con registro de intervenciones de texto. No se precargaron secuencias procesales sin revisión jurídica; agentes, RAG y memoria funcional con fuentes siguen pendientes.
+- El bloqueo de facturación de GitHub se resolvió y los checks requeridos están pasando. El flujo activo es rama de trabajo → PR a `develop` → merge cuando pasen los checks; `main` permanece sin cambios.

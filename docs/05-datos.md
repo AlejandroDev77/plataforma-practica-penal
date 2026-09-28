@@ -1,6 +1,6 @@
 # Modelo de datos inicial — JURISSIM
 
-Estado: esquema inicial implementado, validado con PostgreSQL de pruebas aislado e integrado en `develop` mediante PR #1. Autenticación, CRUD de expedientes/archivos y almacenamiento de páginas extraídas también están integrados; las tablas de análisis, recuperación, simulación y evaluación no significan que esos flujos estén construidos.
+Estado: esquema inicial implementado, validado con PostgreSQL de pruebas aislado e integrado en `develop` mediante PR #1. Autenticación, CRUD de expedientes/archivos, extracción y análisis versionado con revisión humana también están integrados. La simulación tiene implementados el avance por transiciones, la API autenticada y limitada al propietario, y el registro de intervenciones bajo turnos configurables (PR #9–#11); aún no existen agentes, memoria conversacional funcional con fuentes, RAG ni evaluación.
 
 El contrato Pydantic, la persistencia interna versionada y la revisión humana de `analisis_expediente.datos_estructurados` están implementados. Aún no existe un productor que genere esos resultados: el proveedor/modelo y el tratamiento externo del texto siguen pendientes. Los datos derivados permanecen sin confirmar hasta su revisión.
 
@@ -36,7 +36,8 @@ Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.
 - `embedding` se incorpora con una migración pgvector opcional, sin dimensión inventada.
   `modelo_embedding` y `dimensiones_embedding` preparan la integración posterior.
 - Audiencias, etapas y transiciones son configurables. Solo medidas cautelares está
-  habilitada inicialmente. No hay lógica jurídica definitiva ni motor implementado.
+  habilitada inicialmente. Existe un motor básico de avance controlado y una API de
+  simulación; no representa una lógica jurídica definitiva ni incluye agentes.
 - `turnos_etapa_audiencia` define secuencias configurables de rol por etapa. Una simulación guarda una copia de esas secuencias en `configuracion` para mantener estable su ejecución; no se precargan turnos hasta contar con reglas revisadas por el equipo jurídico.
 - Intervenciones tienen orden único por simulación; la etapa debe corresponder al tipo.
 - Rúbricas versionadas con criterios ponderados. Resultados solo admiten criterios
