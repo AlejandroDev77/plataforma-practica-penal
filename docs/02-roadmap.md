@@ -89,7 +89,7 @@ Estado: el esquema Pydantic, la persistencia interna versionada, las citas tipad
 
 ## Fase 5 — RAG
 - [x] RAG del expediente: recuperación textual local con citas de archivo/página (implementada y probada en `funcionalidad/rag-expediente`; pendiente de integración).
-- [ ] RAG jurídico: corpus legal validado, versionado y aislado del expediente.
+- [x] RAG jurídico: indexación/consulta separada limitada a fuentes validadas y vigentes; aún falta curar y cargar el corpus oficial.
 
 Resultado:
 la IA recupera solo fragmentos relevantes con referencias.

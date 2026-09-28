@@ -8,7 +8,7 @@ use App\Models\Expediente;
 use App\Models\FragmentoDocumento;
 use App\Models\PaginaExpediente;
 use App\Models\User;
-use App\Services\Recuperacion\FragmentadorTextoExpediente;
+use App\Services\Recuperacion\FragmentadorTexto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
@@ -46,7 +46,7 @@ class RecuperacionExpedienteTest extends TestCase
             'es_legible' => false,
         ]);
 
-        (new IndexarArchivoExpediente($archivo->getKey()))->handle(new FragmentadorTextoExpediente);
+        (new IndexarArchivoExpediente($archivo->getKey()))->handle(new FragmentadorTexto);
 
         $this->assertGreaterThan(1, FragmentoDocumento::query()->where('id_archivo', $archivo->getKey())->count());
         $this->assertDatabaseHas('fragmentos_documento', [

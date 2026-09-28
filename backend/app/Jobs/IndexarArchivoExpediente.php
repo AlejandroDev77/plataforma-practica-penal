@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\ArchivoExpediente;
 use App\Models\HistorialProcesamiento;
-use App\Services\Recuperacion\FragmentadorTextoExpediente;
+use App\Services\Recuperacion\FragmentadorTexto;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -30,7 +30,7 @@ final class IndexarArchivoExpediente implements ShouldQueue
         return [10, 30, 90];
     }
 
-    public function handle(FragmentadorTextoExpediente $fragmentador): void
+    public function handle(FragmentadorTexto $fragmentador): void
     {
         $historial = DB::transaction(function (): ?HistorialProcesamiento {
             $archivo = ArchivoExpediente::query()->whereKey($this->archivoId)->lockForUpdate()->first();

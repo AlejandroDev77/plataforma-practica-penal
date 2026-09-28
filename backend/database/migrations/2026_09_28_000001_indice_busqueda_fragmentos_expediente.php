@@ -12,10 +12,12 @@ return new class extends Migration
         }
 
         DB::statement("CREATE INDEX fragmentos_archivo_busqueda_es_idx ON fragmentos_documento USING GIN (to_tsvector('spanish', contenido)) WHERE id_archivo IS NOT NULL");
+        DB::statement("CREATE INDEX fragmentos_fuente_busqueda_es_idx ON fragmentos_documento USING GIN (to_tsvector('spanish', contenido)) WHERE id_fuente_juridica IS NOT NULL");
     }
 
     public function down(): void
     {
         DB::statement('DROP INDEX IF EXISTS fragmentos_archivo_busqueda_es_idx');
+        DB::statement('DROP INDEX IF EXISTS fragmentos_fuente_busqueda_es_idx');
     }
 };

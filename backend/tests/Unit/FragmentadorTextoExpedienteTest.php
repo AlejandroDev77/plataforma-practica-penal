@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Services\Recuperacion\FragmentadorTextoExpediente;
+use App\Services\Recuperacion\FragmentadorTexto;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -11,7 +11,7 @@ class FragmentadorTextoExpedienteTest extends TestCase
     public function test_divides_long_text_with_bounded_fragments_and_overlap(): void
     {
         $texto = implode(' ', range(1, 900));
-        $fragmentos = (new FragmentadorTextoExpediente)->fragmentar($texto, 500, 50);
+        $fragmentos = (new FragmentadorTexto)->fragmentar($texto, 500, 50);
 
         $this->assertGreaterThan(1, count($fragmentos));
         foreach ($fragmentos as $fragmento) {
@@ -25,7 +25,7 @@ class FragmentadorTextoExpedienteTest extends TestCase
 
     public function test_empty_text_produces_no_fragments_and_invalid_limits_are_rejected(): void
     {
-        $fragmentador = new FragmentadorTextoExpediente;
+        $fragmentador = new FragmentadorTexto;
 
         $this->assertSame([], $fragmentador->fragmentar(" \n\t "));
         $this->assertSame(['Medida cautelar y declaración.'], $fragmentador->fragmentar('  Medida cautelar y declaración.  '));

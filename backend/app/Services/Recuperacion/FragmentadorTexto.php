@@ -4,7 +4,7 @@ namespace App\Services\Recuperacion;
 
 use InvalidArgumentException;
 
-final class FragmentadorTextoExpediente
+final class FragmentadorTexto
 {
     /** @return list<string> */
     public function fragmentar(string $texto, int $maxCaracteres = 1600, int $solapamiento = 180): array
