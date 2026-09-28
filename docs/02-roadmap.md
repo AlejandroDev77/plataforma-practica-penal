@@ -4,7 +4,7 @@
 
 Las fases de base de datos, autenticación, gestión de expedientes y extracción están integradas en `develop` mediante los PR #1–#4; la persistencia y revisión del análisis se integraron mediante PR #7. Los checks requeridos de GitHub pasaron antes de cada merge. `main` no se ha modificado.
 
-El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis ya están integrados; todavía no se habilitan llamadas a LLM, RAG ni simulación. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
+El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis y la API base de simulaciones ya están integrados; todavía no se habilitan RAG ni llamadas a LLM. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
 
 ## Fase 0 — Base
 - crear repositorio;
@@ -99,7 +99,8 @@ la IA recupera solo fragmentos relevantes con referencias.
 
 ## Fase 6 — Motor de audiencia
 - [x] controlar inicio y avance usando etapas y transiciones configuradas;
-- [ ] asignar turnos y limitar acciones válidas por rol;
+- [x] configurar turnos por etapa, validar el rol del usuario al registrar intervenciones de texto y no avanzar mientras queden turnos configurados;
+- [ ] definir actos procesales específicos permitidos por rol, sujetos a revisión jurídica;
 - [ ] conservar memoria de intervenciones con fuentes;
 - [x] exponer creación, consulta y avance mediante API autenticada y limitada al propietario.
 

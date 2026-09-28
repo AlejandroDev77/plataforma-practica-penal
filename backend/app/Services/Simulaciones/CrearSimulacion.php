@@ -13,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 final class CrearSimulacion
 {
-    public function __construct(private readonly AvanzarEtapaAudiencia $avanzarEtapa) {}
+    public function __construct(
+        private readonly AvanzarEtapaAudiencia $avanzarEtapa,
+        private readonly ResolverTurnoAudiencia $turnos,
+    ) {}
 
     public function ejecutar(User $usuario, Expediente $expediente, int $idAnalisis, int $idTipoAudiencia): Simulacion
     {
@@ -53,6 +56,9 @@ final class CrearSimulacion
                 'id_tipo_audiencia' => $tipoAudiencia->getKey(),
                 'rol_usuario' => 'abogado_defensor',
                 'estado' => 'preparando',
+                'configuracion' => [
+                    'turnos_por_etapa' => $this->turnos->capturarConfiguracion($tipoAudiencia->getKey()),
+                ],
             ]);
 
             ParticipanteSimulacion::query()->create([

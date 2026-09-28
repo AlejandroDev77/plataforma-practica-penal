@@ -16,7 +16,7 @@ Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.
 | Análisis versionado | analisis_expediente, participantes_expediente, delitos_expediente, hechos_expediente, pruebas_expediente, cronologia_expediente, incidencias_analisis, revisiones_analisis |
 | Trazabilidad | referencias_expediente, historial_procesamiento |
 | Conocimiento | fuentes_juridicas, fragmentos_documento |
-| Catálogos | tipos_audiencia, etapas_audiencia, transiciones_audiencia |
+| Catálogos | tipos_audiencia, etapas_audiencia, transiciones_audiencia, turnos_etapa_audiencia |
 | Simulación | simulaciones, participantes_simulacion, intervenciones, fuentes_intervencion |
 | Evaluación | rubricas, criterios_rubrica, evaluaciones, resultados_evaluacion |
 | Limpieza futura | objetos_pendientes_eliminacion |
@@ -37,6 +37,7 @@ Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.
   `modelo_embedding` y `dimensiones_embedding` preparan la integración posterior.
 - Audiencias, etapas y transiciones son configurables. Solo medidas cautelares está
   habilitada inicialmente. No hay lógica jurídica definitiva ni motor implementado.
+- `turnos_etapa_audiencia` define secuencias configurables de rol por etapa. Una simulación guarda una copia de esas secuencias en `configuracion` para mantener estable su ejecución; no se precargan turnos hasta contar con reglas revisadas por el equipo jurídico.
 - Intervenciones tienen orden único por simulación; la etapa debe corresponder al tipo.
 - Rúbricas versionadas con criterios ponderados. Resultados solo admiten criterios
   de la rúbrica evaluada y puntajes entre cero y su máximo.

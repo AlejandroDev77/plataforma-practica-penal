@@ -14,12 +14,21 @@ final class SimulacionResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $turnoActual = $this->getAttribute('turno_actual');
+
         return [
             'id' => $this->getKey(),
             'case_id' => $this->id_expediente,
             'analysis_id' => $this->id_analisis,
             'user_role' => $this->rol_usuario,
             'status' => $this->estado,
+            'current_turn' => $turnoActual === null ? null : [
+                'configured' => $turnoActual['configurada'],
+                'complete' => $turnoActual['completa'],
+                'order' => $turnoActual['orden'],
+                'role' => $turnoActual['rol'],
+                'allowed_actions' => $turnoActual['acciones_permitidas'],
+            ],
             'created_at' => $this->fecha_creacion?->toISOString(),
             'started_at' => $this->fecha_inicio?->toISOString(),
             'finished_at' => $this->fecha_fin?->toISOString(),

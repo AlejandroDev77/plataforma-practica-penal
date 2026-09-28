@@ -44,6 +44,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'index']);
         Route::post('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'store']);
         Route::get('/simulaciones/{simulacion}', [SimulacionController::class, 'show']);
+        Route::post('/simulaciones/{simulacion}/intervenciones', [SimulacionController::class, 'storeIntervencion']);
         Route::post('/simulaciones/{simulacion}/avanzar', [SimulacionController::class, 'avanzar']);
     });
 });

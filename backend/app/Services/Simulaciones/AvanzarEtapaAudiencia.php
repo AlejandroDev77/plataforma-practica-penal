@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 final class AvanzarEtapaAudiencia
 {
+    public function __construct(private readonly ResolverTurnoAudiencia $turnos) {}
+
     public function ejecutar(Simulacion $simulacion, ?int $destinoSolicitado = null): Simulacion
     {
         return DB::transaction(function () use ($simulacion, $destinoSolicitado): Simulacion {
@@ -37,6 +39,8 @@ final class AvanzarEtapaAudiencia
                     'La etapa actual no pertenece a esta audiencia o está inactiva.',
                 );
             }
+
+            $this->turnos->exigirTurnosCompletados($actual, (int) $etapa->getKey());
 
             if ($etapa->es_final) {
                 if ($destinoSolicitado !== null) {

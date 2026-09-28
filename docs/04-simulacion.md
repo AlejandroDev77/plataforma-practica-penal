@@ -1,6 +1,6 @@
 # Motor de simulación
 
-Estado: el catálogo de etapas y transiciones está sembrado para medidas cautelares. La API autenticada permite crear simulaciones a partir de un análisis aprobado, consultar las del expediente propietario y avanzar únicamente por transiciones activas. Cada simulación inicia en su etapa inicial configurada y termina al avanzar desde su etapa final. Aún no existen turnos configurables por rol, memoria conversacional ni agentes; no se genera texto ni se llama a un modelo.
+Estado: el catálogo de etapas y transiciones está sembrado para medidas cautelares. La API autenticada permite crear simulaciones a partir de un análisis aprobado, consultar las del expediente propietario y avanzar únicamente por transiciones activas. Los turnos por etapa se configuran por rol, se copian a la simulación al crearla y regulan el registro de intervenciones de texto y el avance. El catálogo no trae turnos jurídicos predeterminados: hasta que se incorporen reglas revisadas, las etapas no aceptan intervenciones. No hay agentes ni generación automática; no se llama a un modelo.
 
 ## Objetivo
 Controlar la audiencia; el LLM NO controla el flujo completo.
@@ -33,7 +33,11 @@ Debe conocer:
 
 El servicio `App\Services\Simulaciones\AvanzarEtapaAudiencia` es la primera pieza del orquestador. Bloquea la fila de la simulación durante cada avance para evitar transiciones concurrentes. Si una etapa tiene varias salidas activas, exige que quien lo invoque indique una de esas salidas; no permite saltar a etapas arbitrarias.
 
-La API `/api/v1` expone tipos de audiencia activos y permite crear, listar, consultar y avanzar simulaciones. Todas estas rutas requieren `auth:sanctum`; las consultas se limitan a los expedientes y simulaciones del usuario autenticado. La creación solo acepta análisis cuya última revisión humana sea `aprobado` y asigna al usuario el rol `abogado_defensor`. No crea participantes de IA ni genera intervenciones. Si una etapa admite varios destinos, la respuesta incluye los destinos configurados y el cliente debe enviar `id_etapa_destino`.
+La API `/api/v1` expone tipos de audiencia activos y permite crear, listar, consultar, registrar intervenciones del usuario y avanzar simulaciones. Todas estas rutas requieren `auth:sanctum`; las consultas se limitan a los expedientes y simulaciones del usuario autenticado. La creación solo acepta análisis cuya última revisión humana sea `aprobado` y asigna al usuario el rol `abogado_defensor`. No crea participantes de IA ni genera intervenciones automáticas. Si una etapa admite varios destinos, la respuesta incluye los destinos configurados y el cliente debe enviar `id_etapa_destino`.
+
+La tabla `turnos_etapa_audiencia` define una secuencia finita por etapa; cada fila representa una intervención esperada y contiene su orden y rol. Se permiten varias filas para el mismo rol cuando la configuración aprobada contempla más de un turno. Al iniciar una simulación se guarda esa secuencia en `simulaciones.configuracion.turnos_por_etapa`, de modo que cambios posteriores en el catálogo solo afecten simulaciones nuevas. `POST /api/v1/simulaciones/{simulacion}/intervenciones` solo recibe el contenido: el servidor determina el rol y participante desde el turno vigente, y permite texto únicamente cuando coincide con `rol_usuario`. La respuesta incluye `current_turn` con `allowed_actions`; en esta fase la única acción implementada es `submit_text_intervention`. El avance queda bloqueado mientras existan turnos configurados sin completar. Las etapas sin secuencia configurada conservan el avance de catálogo pero no admiten intervenciones.
+
+No se han cargado secuencias jurídicas iniciales a propósito. Antes de configurar una audiencia, un equipo jurídico debe definir y revisar el orden y los roles para el caso de uso aplicable. Turnos que correspondan a agentes aún no implementados no deben activarse: la fase de generación deberá registrar esos turnos desde el servidor.
 
 ## Estado MVP
 
