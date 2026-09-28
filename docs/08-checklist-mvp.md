@@ -49,7 +49,7 @@ El MVP está listo cuando:
 - [x] usuario = defensa al crear la simulación;
 - [ ] juez IA;
 - [ ] fiscal IA;
-- [ ] turnos controlados;
+- [x] turnos de texto configurables por etapa y validados por rol; la secuencia jurídica inicial aún requiere revisión y carga;
 - [ ] memoria funcional;
 - [ ] respuestas usan expediente;
 - [ ] respuestas pueden usar normativa.

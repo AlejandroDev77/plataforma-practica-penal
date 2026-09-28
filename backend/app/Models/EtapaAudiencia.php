@@ -47,4 +47,11 @@ class EtapaAudiencia extends ModeloDominio
     {
         return $this->hasMany(TransicionAudiencia::class, 'id_etapa_destino', 'id_etapa');
     }
+
+    public function turnosConfigurados(): HasMany
+    {
+        return $this->hasMany(TurnoEtapaAudiencia::class, 'id_etapa', 'id_etapa')
+            ->where('activo', true)
+            ->orderBy('orden');
+    }
 }
