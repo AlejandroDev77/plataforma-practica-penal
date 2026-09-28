@@ -8,6 +8,7 @@ import { deleteCaseFile, downloadCaseFile, uploadCaseFiles } from '../../feature
 import { casesQueryKey, useCase, useCaseFilePages } from '../../features/cases/model/use-cases'
 import type { CaseFile, LegalCase, ProcessingStatus } from '../../features/cases/model/case'
 import { getAuthErrorMessage } from '../../features/auth/api/auth-api'
+import { CaseAnalysisSection } from '../../features/cases/components/CaseAnalysisSection'
 import { shortDate } from '../../shared/lib/admin-utils'
 
 const statusLabel: Record<LegalCase['status'], string> = {
@@ -165,7 +166,9 @@ export function CaseDetailPage() {
       </section>
     </div>
 
-    {removing && <Modal title="Retirar documento" description="Se elimina el archivo privado y su registro de este expediente." onClose={() => setRemoving(null)}>
+    <CaseAnalysisSection caseId={id} />
+
+    {removing && <Modal title="Retirar documento" description="Se elimina el archivo privado y los análisis generados que lo citan, para no conservar resultados derivados del documento." onClose={() => setRemoving(null)}>
       <div className="modal-body"><p>¿Eliminar <strong>{removing.name}</strong>? Esta acción no se puede deshacer desde la aplicación.</p><div className="modal-actions">
         <button className="btn btn-secondary" onClick={() => setRemoving(null)}>Cancelar</button>
         <button className="btn btn-danger" disabled={remove.isPending} onClick={() => remove.mutate(removing.id)}>{remove.isPending ? 'Eliminando…' : 'Eliminar archivo'}</button>

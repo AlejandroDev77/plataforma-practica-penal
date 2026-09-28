@@ -2,7 +2,7 @@
 
 Estado: esquema inicial implementado, validado con PostgreSQL de pruebas aislado e integrado en `develop` mediante PR #1. Autenticación, CRUD de expedientes/archivos y almacenamiento de páginas extraídas también están integrados; las tablas de análisis, recuperación, simulación y evaluación no significan que esos flujos estén construidos.
 
-El contrato Pydantic para el contenido de `analisis_expediente.datos_estructurados` está en desarrollo; aún no se crean versiones de análisis ni filas normalizadas a partir de un modelo.
+El contrato Pydantic, la persistencia interna versionada y la revisión humana de `analisis_expediente.datos_estructurados` están implementados. Aún no existe un productor que genere esos resultados: el proveedor/modelo y el tratamiento externo del texto siguen pendientes. Los datos derivados permanecen sin confirmar hasta su revisión.
 
 PostgreSQL. Las tablas de dominio y sus atributos están en español, con claves
 descriptivas y timestamps `fecha_creacion` / `fecha_actualizacion`.
@@ -13,7 +13,7 @@ Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.
 | Área | Tablas |
 | --- | --- |
 | Expedientes y archivos | expedientes, archivos_expediente, paginas_expediente |
-| Análisis versionado | analisis_expediente, participantes_expediente, delitos_expediente, hechos_expediente, pruebas_expediente, cronologia_expediente, incidencias_analisis |
+| Análisis versionado | analisis_expediente, participantes_expediente, delitos_expediente, hechos_expediente, pruebas_expediente, cronologia_expediente, incidencias_analisis, revisiones_analisis |
 | Trazabilidad | referencias_expediente, historial_procesamiento |
 | Conocimiento | fuentes_juridicas, fragmentos_documento |
 | Catálogos | tipos_audiencia, etapas_audiencia, transiciones_audiencia |
@@ -41,6 +41,9 @@ Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.
 - Rúbricas versionadas con criterios ponderados. Resultados solo admiten criterios
   de la rúbrica evaluada y puntajes entre cero y su máximo.
 - Información extraída y fuentes jurídicas empiezan sin confirmar/validar.
+- Las versiones de análisis no se sobrescriben: una entrada interna validada crea un nuevo `id_analisis` y sus registros normalizados. Las revisiones humanas son apéndices auditables, no una edición del resultado.
+- Una referencia debe pertenecer al mismo expediente y citar un extracto literal de una página legible; la confianza se conserva como categoría textual, no como porcentaje.
+- Al retirar un archivo se eliminan las versiones de análisis que lo citan para no conservar datos derivados del documento retirado.
 - No hay soft deletes por ahora. Se prueban cascadas y una cola transaccional de claves
   pendientes para la futura eliminación física, sin llamadas a R2.
 

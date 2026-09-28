@@ -79,11 +79,11 @@ Resultado de la fase: texto recuperado asociado al archivo y a páginas/localiza
 - [x] representar vacíos e incertidumbres sin inventar hechos;
 - [x] exigir citas textuales vinculadas a páginas del lote autorizado;
 - [x] limitar páginas y caracteres procesados por lote;
+- [x] persistir resultados por versión, volver a verificar las citas y ofrecer revisión humana del propietario;
 - [ ] decidir proveedor/modelo inicial y política para enviar texto jurídico;
-- [ ] ejecutar análisis por cola y persistir una versión trazable en las tablas existentes;
-- [ ] mostrar el resultado al propietario para revisión.
+- [ ] ejecutar análisis por cola.
 
-Estado: el esquema Pydantic y la validación de citas están implementados en `funcionalidad/analisis-expedientes`. No hay llamadas a LLM ni análisis de contenido real. La decisión de proveedor/modelo sigue pendiente porque cambia privacidad, coste y configuración; hasta entonces el contrato se prueba con datos sintéticos.
+Estado: el esquema Pydantic, la persistencia interna versionada, las citas tipadas, el historial de revisión y la interfaz del expediente están implementados en `funcionalidad/analisis-expedientes`. La migración aditiva se aplicó en desarrollo y `jurissim_pruebas` se creó como base aislada. La suite Laravel pasó con 56 pruebas y 357 aserciones; también pasaron las pruebas Python y las verificaciones previas de frontend. La base habitual `jurissim` no se usó para pruebas destructivas. No hay llamadas a LLM ni generación de contenido real: la decisión de proveedor/modelo y la política de transferencia de texto jurídico siguen pendientes por sus implicaciones de privacidad, coste y configuración.
 
 ---
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AnalisisExpediente extends ModeloDominio
 {
@@ -70,6 +71,19 @@ class AnalisisExpediente extends ModeloDominio
     public function referencias(): HasMany
     {
         return $this->hasMany(ReferenciaExpediente::class, 'id_analisis', 'id_analisis');
+    }
+
+    public function revisiones(): HasMany
+    {
+        return $this->hasMany(RevisionAnalisis::class, 'id_analisis', 'id_analisis')
+            ->orderByDesc('fecha_creacion')
+            ->orderByDesc('id_revision');
+    }
+
+    public function revisionActual(): HasOne
+    {
+        return $this->hasOne(RevisionAnalisis::class, 'id_analisis', 'id_analisis')
+            ->latestOfMany('fecha_creacion');
     }
 
     public function simulaciones(): HasMany

@@ -2,7 +2,7 @@
 
 ## Estado
 
-En desarrollo. El contrato y la validación de procedencia están implementados; no hay proveedor/modelo elegido, llamada a LLM, job de análisis ni escritura a `analisis_expediente`.
+El contrato, la validación de procedencia, la persistencia versionada y la revisión humana están implementados. No hay proveedor/modelo elegido, llamada a LLM ni job que genere análisis; la aplicación no inventa resultados ni envía texto del expediente a terceros. La suite Laravel de esta fase se ejecutó con éxito en la base aislada `jurissim_pruebas` (56 pruebas, 357 aserciones); no debe apuntarse a la base habitual `jurissim`.
 
 ## Contrato de entrada
 
@@ -39,3 +39,17 @@ El contrato se prueba sin credenciales ni servicios externos:
 cd ai-service
 .\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider
 ```
+
+## Persistencia interna y consulta
+
+Cuando un productor interno autorizado ya tenga una salida estructurada, puede entregarla mediante `POST /api/internal/v1/expedientes/{id}/analisis` con el token Bearer compartido. Este endpoint solo valida y persiste; no llama ni elige ningún modelo. Laravel vuelve a verificar que todas las páginas sean legibles, pertenezcan al expediente indicado, no excedan 10 páginas/40.000 caracteres y que cada extracto coincida con el texto almacenado. Una referencia que falle cancela la transacción completa.
+
+Cada resultado crea una nueva versión en `analisis_expediente`, sus elementos normalizados, las referencias tipadas y una fila de `historial_procesamiento`. Las certezas permanecen cualitativas; no se convierten en porcentajes. Los elementos comienzan sin confirmar y `modelo_ia` queda nulo mientras no se configure un proveedor.
+
+El propietario consulta la versión más reciente con `GET /api/v1/expedientes/{id}/analisis`. Solo recibe citas con nombre del documento, localizador y extracto cuando la página sigue disponible y el texto coincide; los IDs internos de página no se exponen. La ruta está dentro de la sesión Sanctum y el ámbito del expediente del usuario.
+
+La interfaz administrativa del detalle permite registrar `aprobado` o `requiere_cambios`; solicitar cambios exige observación. La aprobación solo se habilita con al menos una cita vigente y todas verificables. Cada decisión añade una fila en `revisiones_analisis`; no se sobrescribe el historial.
+
+Al retirar un archivo, también se eliminan las versiones de análisis que lo citan junto con sus referencias, hallazgos, historial y revisiones. Así no persisten extractos o resultados derivados del archivo eliminado. Si una página se vuelve ilegible sin retirar el archivo, la cita se marca no disponible y no puede aprobarse el análisis.
+
+Las pruebas HTTP de Laravel están en `backend/tests/Feature/Api/AnalisisExpedienteTest.php`. `phpunit.xml` fuerza PostgreSQL y la base `jurissim_pruebas`; la prueba principal además valida que no se use otra base ni `DB_URL`. Mantener esa separación al ejecutar `php artisan test` y no crear datos de prueba en `jurissim`.

@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\AnalisisExpediente;
 use App\Models\ArchivoExpediente;
 use App\Models\Expediente;
 use App\Models\ObjetoPendienteEliminacion;
+use App\Services\Analisis\CitasAnalisis;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -98,8 +100,27 @@ final class ExpedienteArchivoService
     public function remove(Expediente $expediente, int $archivoId): void
     {
         $object = DB::transaction(function () use ($expediente, $archivoId): ?array {
-            $archivo = $expediente->archivos()->whereKey($archivoId)->lockForUpdate()->firstOrFail();
+            $caso = Expediente::query()->whereKey($expediente->getKey())->lockForUpdate()->firstOrFail();
+            $archivo = $caso->archivos()->whereKey($archivoId)->lockForUpdate()->firstOrFail();
             $object = ['disco' => $archivo->disco, 'ruta' => $archivo->ruta_almacenamiento];
+
+            $paginasEliminadas = $archivo->paginas()->pluck('id_pagina')->map(fn ($id): int => (int) $id)->all();
+            if ($paginasEliminadas !== []) {
+                AnalisisExpediente::query()
+                    ->where('id_expediente', $caso->getKey())
+                    ->get(['id_analisis', 'id_expediente', 'datos_estructurados'])
+                    ->each(function (AnalisisExpediente $analisis) use ($paginasEliminadas): void {
+                        $citaPaginas = collect(CitasAnalisis::recopilar($analisis->datos_estructurados ?? []))
+                            ->pluck('page_id')
+                            ->map(fn ($id): int => (int) $id);
+
+                        if ($citaPaginas->intersect($paginasEliminadas)->isNotEmpty()) {
+                            // El resultado derivado y su historial también contienen información del archivo retirado.
+                            $analisis->delete();
+                        }
+                    });
+            }
+
             $archivo->delete();
 
             return $object;
