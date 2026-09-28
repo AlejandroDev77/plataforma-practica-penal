@@ -211,6 +211,10 @@ final class ProcesarArchivoExpediente implements ShouldQueue
 
             $this->syncExpedienteStatus($locked->id_expediente);
         });
+
+        if (collect($result['pages'])->contains(fn (array $page): bool => $page['is_readable'] && trim($page['text']) !== '')) {
+            IndexarArchivoExpediente::dispatch($archivo->getKey());
+        }
     }
 
     private function markRejected(ArchivoExpediente $archivo, HistorialProcesamiento $history): void

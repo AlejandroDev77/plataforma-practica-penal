@@ -252,7 +252,18 @@ class ExpedienteTest extends TestCase
             'texto_extraido' => 'Se solicita la aplicación de medidas cautelares.',
             'es_legible' => true,
         ]);
-        $this->assertSame('procesado', HistorialProcesamiento::query()->sole()->estado);
+        $this->assertSame('procesado', HistorialProcesamiento::query()
+            ->where('tipo', 'extraccion_texto')
+            ->sole()
+            ->estado);
+        $this->assertSame('procesado', HistorialProcesamiento::query()
+            ->where('tipo', 'indexacion_rag')
+            ->sole()
+            ->estado);
+        $this->assertDatabaseHas('fragmentos_documento', [
+            'id_archivo' => $archivo->getKey(),
+            'contenido' => 'Se solicita la aplicación de medidas cautelares.',
+        ]);
         Http::assertSent(fn ($request): bool => $request->hasHeader('Authorization', 'Bearer prueba-interna'));
     }
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\PasswordResetLinkController;
+use App\Http\Controllers\Api\V1\RecuperacionExpedienteController;
 use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\ResetPasswordController;
 use App\Http\Controllers\Api\V1\SimulacionController;
@@ -39,6 +40,8 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/expedientes/{expediente}/archivos/{archivo}', [ExpedienteArchivoController::class, 'destroy']);
         Route::get('/expedientes/{expediente}/analisis', [AnalisisExpedienteController::class, 'index']);
         Route::post('/expedientes/{expediente}/analisis/{analisis}/revisiones', [AnalisisExpedienteController::class, 'storeRevision']);
+        Route::post('/expedientes/{expediente}/recuperacion', [RecuperacionExpedienteController::class, 'search']);
+        Route::post('/expedientes/{expediente}/recuperacion/indexar', [RecuperacionExpedienteController::class, 'indexar']);
 
         Route::get('/tipos-audiencia', [TipoAudienciaController::class, 'index']);
         Route::get('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'index']);
