@@ -10,7 +10,9 @@ use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\PasswordResetLinkController;
 use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\ResetPasswordController;
+use App\Http\Controllers\Api\V1\SimulacionController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
+use App\Http\Controllers\Api\V1\TipoAudienciaController;
 use App\Http\Middleware\VerificarTokenServicioInterno;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +39,12 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/expedientes/{expediente}/archivos/{archivo}', [ExpedienteArchivoController::class, 'destroy']);
         Route::get('/expedientes/{expediente}/analisis', [AnalisisExpedienteController::class, 'index']);
         Route::post('/expedientes/{expediente}/analisis/{analisis}/revisiones', [AnalisisExpedienteController::class, 'storeRevision']);
+
+        Route::get('/tipos-audiencia', [TipoAudienciaController::class, 'index']);
+        Route::get('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'index']);
+        Route::post('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'store']);
+        Route::get('/simulaciones/{simulacion}', [SimulacionController::class, 'show']);
+        Route::post('/simulaciones/{simulacion}/avanzar', [SimulacionController::class, 'avanzar']);
     });
 });
 

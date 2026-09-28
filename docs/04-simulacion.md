@@ -1,6 +1,6 @@
 # Motor de simulación
 
-Estado: el catálogo de etapas y transiciones está sembrado para medidas cautelares. El avance determinista ya se controla en Laravel: inicia en la única etapa inicial activa, sigue transiciones activas del tipo de audiencia y finaliza al intentar avanzar desde la etapa marcada como final. Aún no existen endpoints de simulación, asignación de turnos por rol, memoria conversacional ni agentes; no se genera texto ni se llama a un modelo.
+Estado: el catálogo de etapas y transiciones está sembrado para medidas cautelares. La API autenticada permite crear simulaciones a partir de un análisis aprobado, consultar las del expediente propietario y avanzar únicamente por transiciones activas. Cada simulación inicia en su etapa inicial configurada y termina al avanzar desde su etapa final. Aún no existen turnos configurables por rol, memoria conversacional ni agentes; no se genera texto ni se llama a un modelo.
 
 ## Objetivo
 Controlar la audiencia; el LLM NO controla el flujo completo.
@@ -31,7 +31,9 @@ Debe conocer:
 - contexto del expediente;
 - historial.
 
-El servicio `App\Services\Simulaciones\AvanzarEtapaAudiencia` es la primera pieza del orquestador. Bloquea la fila de la simulación durante cada avance para evitar transiciones concurrentes. Si una etapa tiene varias salidas activas, exige que quien lo invoque indique una de esas salidas; no permite saltar a etapas arbitrarias. La autorización de propiedad corresponde al controlador que lo invoque y todavía no hay uno.
+El servicio `App\Services\Simulaciones\AvanzarEtapaAudiencia` es la primera pieza del orquestador. Bloquea la fila de la simulación durante cada avance para evitar transiciones concurrentes. Si una etapa tiene varias salidas activas, exige que quien lo invoque indique una de esas salidas; no permite saltar a etapas arbitrarias.
+
+La API `/api/v1` expone tipos de audiencia activos y permite crear, listar, consultar y avanzar simulaciones. Todas estas rutas requieren `auth:sanctum`; las consultas se limitan a los expedientes y simulaciones del usuario autenticado. La creación solo acepta análisis cuya última revisión humana sea `aprobado` y asigna al usuario el rol `abogado_defensor`. No crea participantes de IA ni genera intervenciones. Si una etapa admite varios destinos, la respuesta incluye los destinos configurados y el cliente debe enviar `id_etapa_destino`.
 
 ## Estado MVP
 

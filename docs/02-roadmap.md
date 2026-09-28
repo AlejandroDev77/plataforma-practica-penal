@@ -101,7 +101,7 @@ la IA recupera solo fragmentos relevantes con referencias.
 - [x] controlar inicio y avance usando etapas y transiciones configuradas;
 - [ ] asignar turnos y limitar acciones válidas por rol;
 - [ ] conservar memoria de intervenciones con fuentes;
-- [ ] exponer creación y avance mediante API autorizada.
+- [x] exponer creación, consulta y avance mediante API autenticada y limitada al propietario.
 
 MVP:
 medidas cautelares.
