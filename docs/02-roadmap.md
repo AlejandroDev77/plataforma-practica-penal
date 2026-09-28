@@ -2,9 +2,9 @@
 
 ## Estado y regla de avance
 
-Las fases de base de datos, autenticación, gestión de expedientes y extracción están integradas en `develop` mediante los PR #1–#4; los checks requeridos de GitHub pasaron antes de cada merge. El usuario confirmó el desbloqueo de facturación de GitHub el 27-09-2026. `main` no se ha modificado.
+Las fases de base de datos, autenticación, gestión de expedientes y extracción están integradas en `develop` mediante los PR #1–#4; la persistencia y revisión del análisis se integraron mediante PR #7. Los checks requeridos de GitHub pasaron antes de cada merge. `main` no se ha modificado.
 
-El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. La siguiente tarea es completar el contrato de análisis ya iniciado en `funcionalidad/analisis-expedientes`; todavía no se habilitan llamadas a LLM, RAG ni simulación. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
+El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis ya están integrados; todavía no se habilitan llamadas a LLM, RAG ni simulación. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
 
 ## Fase 0 — Base
 - crear repositorio;
@@ -64,13 +64,13 @@ Estado: implementada, probada e integrada en `develop` mediante PR #3. El conten
 - [x] guardar páginas, localizadores, legibilidad y estado del proceso;
 - [x] proteger la API interna FastAPI con token compartido y validar límites;
 - [x] verificar OCR real en español sobre un escaneo sintético con Tesseract 5.5.0;
-- [ ] dejar el ejecutable Tesseract y el modelo `spa` configurados de forma persistente en el entorno local.
+- [x] dejar el ejecutable Tesseract y el modelo `spa` configurados de forma persistente en el entorno local.
 
-Estado: pipeline y pruebas automáticas integrados en `develop` mediante PR #4. La prueba sintética real reconoció texto en español sin advertencias. Tesseract 5.5.0 está instalado en Windows, pero su carpeta aún no forma parte del `PATH`; el modelo `spa` se usó desde una carpeta temporal para esta verificación. Para que OCR quede disponible al iniciar FastAPI en otras sesiones, configurar una ruta persistente para `spa` y `eng` y agregar el ejecutable al `PATH` del proceso, según `docs/03-ia-expedientes.md`. DOCX muestra el documento completo porque su paginación física no está disponible en esta extracción.
+Estado: pipeline y pruebas automáticas integrados en `develop` mediante PR #4. Tesseract 5.5.0 está instalado en Windows; `spa` y `eng` se guardaron en `%LOCALAPPDATA%\JURISSIM\tessdata`, y el `.env` local de FastAPI configura tanto el ejecutable como los modelos sin modificar el `PATH` global. Un escaneo sintético reconoció texto en español sin advertencias. DOCX muestra el documento completo porque su paginación física no está disponible en esta extracción.
 
 El procesamiento funciona de forma nativa, sin Docker: el worker Laravel entrega el archivo privado a FastAPI con token, PyMuPDF/python-docx extraen texto y las páginas/localizadores y estados se guardan en PostgreSQL. FastAPI no persiste copias del expediente ni llama a LLM.
 
-Resultado de la fase: texto recuperado asociado al archivo y a páginas/localizadores, con las limitaciones explícitas de DOCX y con OCR español probado sobre un documento sintético. El entorno permanente de OCR sigue pendiente.
+Resultado de la fase: texto recuperado asociado al archivo y a páginas/localizadores, con las limitaciones explícitas de DOCX y con OCR español probado y configurado localmente de forma persistente.
 
 ---
 
@@ -83,7 +83,7 @@ Resultado de la fase: texto recuperado asociado al archivo y a páginas/localiza
 - [ ] decidir proveedor/modelo inicial y política para enviar texto jurídico;
 - [ ] ejecutar análisis por cola.
 
-Estado: el esquema Pydantic, la persistencia interna versionada, las citas tipadas, el historial de revisión y la interfaz del expediente están implementados en `funcionalidad/analisis-expedientes`. La migración aditiva se aplicó en desarrollo y `jurissim_pruebas` se creó como base aislada. La suite Laravel pasó con 56 pruebas y 357 aserciones; también pasaron las pruebas Python y las verificaciones previas de frontend. La base habitual `jurissim` no se usó para pruebas destructivas. No hay llamadas a LLM ni generación de contenido real: la decisión de proveedor/modelo y la política de transferencia de texto jurídico siguen pendientes por sus implicaciones de privacidad, coste y configuración.
+Estado: el esquema Pydantic, la persistencia interna versionada, las citas tipadas, el historial de revisión y la interfaz del expediente están integrados en `develop` mediante PR #7. La migración aditiva se aplicó en desarrollo y `jurissim_pruebas` se creó como base aislada. La suite Laravel pasó con 56 pruebas y 357 aserciones; también pasaron las pruebas Python y las verificaciones previas de frontend. La base habitual `jurissim` no se usó para pruebas destructivas. No hay llamadas a LLM ni generación de contenido real: la decisión de proveedor/modelo y la política de transferencia de texto jurídico siguen pendientes por sus implicaciones de privacidad, coste y configuración.
 
 ---
 

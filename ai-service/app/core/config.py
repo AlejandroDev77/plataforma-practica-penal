@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = None
     ocr_language: str = "spa+eng"
     ocr_dpi: int = 200
+    ocr_tesseract_path: str | None = None
     ocr_tessdata_path: str | None = None
     document_max_bytes: int = 52_428_800
     document_max_pages: int = 500
