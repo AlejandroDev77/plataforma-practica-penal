@@ -57,7 +57,13 @@ El primer contrato Pydantic está en `ai-service/app/modules/analysis/`. Recibe 
 - Los lotes admiten hasta 10 páginas y 40.000 caracteres. No se envía el expediente completo en una sola solicitud.
 - Los campos extra se rechazan y las preguntas de información faltante no se presentan como hechos.
 
-El contrato, la persistencia versionada y la revisión humana ya están integrados mediante PR #7, pero todavía no se llama a un modelo. El proveedor inicial, el modelo y la política de transferencia de texto jurídico están pendientes; hasta que se decidan, no hay envío de datos a servicios LLM.
+El contrato, la persistencia versionada y la revisión humana ya están integrados mediante PR #7. Para las primeras pruebas se acordó usar un modelo local; no se habilita ningún proveedor externo.
+
+## Pruebas locales del modelo
+
+El servicio de IA ofrece `POST /api/v1/analysis/analyze`, protegido por el mismo token interno. Está deshabilitado por defecto (`LLM_PROVIDER=disabled`). Para una prueba local se configura `LLM_PROVIDER=ollama` y `LLM_MODEL` con un modelo descargado en Ollama. Por seguridad, `OLLAMA_BASE_URL` solo admite `http://127.0.0.1:11434`.
+
+El candidato de prueba es `qwen3.5:2b-q4_K_M` (aprox. 1,9 GB), para el que esta máquina tiene memoria suficiente. Primero se evaluará únicamente con documentos sintéticos; el contexto se limita a 16.384 tokens. En Windows, Ollama debe ejecutarse con `OLLAMA_NO_CLOUD=1`, enlazado a loopback. Los pesos se descargan una vez desde Ollama, pero el texto de los expedientes se procesa localmente. Para activarlo en `ai-service/.env`, se configura `LLM_PROVIDER=ollama` y `LLM_MODEL=qwen3.5:2b-q4_K_M`; el valor predeterminado continúa deshabilitado. Esta integración todavía no conecta Laravel a una cola de análisis ni activa proveedores externos.
 
 RAG, embeddings y recuperación jurídica siguen siendo fases separadas.
 

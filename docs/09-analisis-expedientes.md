@@ -2,7 +2,7 @@
 
 ## Estado
 
-El contrato, la validación de procedencia, la persistencia versionada y la revisión humana están implementados. No hay proveedor/modelo elegido, llamada a LLM ni job que genere análisis; la aplicación no inventa resultados ni envía texto del expediente a terceros. La suite Laravel de esta fase se ejecutó con éxito en la base aislada `jurissim_pruebas` (56 pruebas, 357 aserciones); no debe apuntarse a la base habitual `jurissim`.
+El contrato, la validación de procedencia, la persistencia versionada y la revisión humana están implementados. Se acordó probar primero con un modelo local; el endpoint Ollama está desactivado por defecto. Todavía no existe un job de Laravel que genere análisis ni se conecta un proveedor externo. La suite Laravel de esta fase se ejecutó con éxito en la base aislada `jurissim_pruebas` (56 pruebas, 357 aserciones); no debe apuntarse a la base habitual `jurissim`.
 
 ## Contrato de entrada
 
@@ -29,9 +29,11 @@ La comprobación de procedencia rechaza tanto páginas ajenas al lote como extra
 
 Los vacíos se expresan como preguntas y su relevancia, no como respuestas inferidas. Las salidas no determinan culpabilidad ni sustituyen asesoramiento o revisión de un profesional.
 
-## Decisión pendiente antes de usar un modelo
+## Modelo local en pruebas
 
-La arquitectura aún no ha seleccionado proveedor, modelo, endpoint ni política de transferencia de datos. Por tanto, esta fase no envía texto a terceros. Antes de activar generación se debe registrar esa decisión, configurar secretos localmente, definir el tratamiento de expedientes sensibles y validar la salida con documentos sintéticos.
+Ollama se activa solo con `LLM_PROVIDER=ollama` y `LLM_MODEL` configurado; la opción predeterminada sigue siendo `LLM_PROVIDER=disabled`. La URL solo admite `http://127.0.0.1:11434`, el endpoint requiere el token interno y no registra el texto recibido. La integración exige salida JSON conforme al contrato y vuelve a verificar las citas contra las páginas fuente antes de devolver el resultado. El contenido de las páginas se considera no confiable para ignorar instrucciones embebidas en el propio expediente.
+
+El candidato local inicial es `qwen3.5:2b-q4_K_M` (aprox. 1,9 GB), que se probará primero con documentos sintéticos. Falta validar su calidad en esta máquina, implementar el job de análisis por cola en Laravel y revisar resultados con una persona. El modelo no determina culpabilidad ni sustituye revisión jurídica. Cualquier proveedor externo queda fuera de esta fase y requerirá una decisión separada.
 
 El contrato se prueba sin credenciales ni servicios externos:
 
