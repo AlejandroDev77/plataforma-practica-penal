@@ -99,8 +99,10 @@ async def test_ollama_receives_only_bounded_source_pages_and_schema() -> None:
     assert isinstance(body, dict)
     assert body["model"] == "qwen3.5:2b-q4_K_M"
     assert body["stream"] is False
+    assert body["think"] is False
     assert body["format"]["type"] == "object"
     assert body["options"]["num_ctx"] == 16_384
+    assert "no que el hecho sea verdadero" in body["messages"][0]["content"]
     assert body["messages"][1]["content"].find("aprehensión ocurrió") >= 0
     assert "instructions" not in body["messages"][1]["content"]
     assert "Authorization" not in body

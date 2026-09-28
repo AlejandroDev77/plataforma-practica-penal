@@ -25,15 +25,17 @@ Cada afirmación encontrada contiene:
 - una o más referencias a páginas recibidas en el lote;
 - un extracto literal que permite localizar y revisar la afirmación.
 
+`Textual` describe lo que el documento afirma, no confirma que el hecho sea verdadero. Las declaraciones y alegaciones deben atribuirse a su emisor; `incierto` se reserva para fuentes ambiguas, contradictorias o ilegibles.
+
 La comprobación de procedencia rechaza tanto páginas ajenas al lote como extractos que no aparezcan en la página citada (ignorando diferencias de espacios y mayúsculas). No demuestra por sí sola que una interpretación jurídica sea correcta; el resultado permanece como información no confirmada, sujeta a revisión humana.
 
 Los vacíos se expresan como preguntas y su relevancia, no como respuestas inferidas. Las salidas no determinan culpabilidad ni sustituyen asesoramiento o revisión de un profesional.
 
 ## Modelo local en pruebas
 
-Ollama se activa solo con `LLM_PROVIDER=ollama` y `LLM_MODEL` configurado; la opción predeterminada sigue siendo `LLM_PROVIDER=disabled`. La URL solo admite `http://127.0.0.1:11434`, el endpoint requiere el token interno y no registra el texto recibido. La integración exige salida JSON conforme al contrato y vuelve a verificar las citas contra las páginas fuente antes de devolver el resultado. El contenido de las páginas se considera no confiable para ignorar instrucciones embebidas en el propio expediente.
+Ollama se activa solo con `LLM_PROVIDER=ollama` y `LLM_MODEL` configurado; la opción predeterminada sigue siendo `LLM_PROVIDER=disabled`. La URL solo admite `http://127.0.0.1:11434`, el endpoint requiere el token interno y no registra el texto recibido. La integración solicita salida estructurada sin razonamiento extendido, valida el JSON conforme al contrato y vuelve a verificar las citas contra las páginas fuente antes de devolver el resultado. El contenido de las páginas se considera no confiable para ignorar instrucciones embebidas en el propio expediente.
 
-El candidato local inicial es `qwen3.5:2b-q4_K_M` (aprox. 1,9 GB), que se probará primero con documentos sintéticos. Falta validar su calidad en esta máquina, implementar el job de análisis por cola en Laravel y revisar resultados con una persona. El modelo no determina culpabilidad ni sustituye revisión jurídica. Cualquier proveedor externo queda fuera de esta fase y requerirá una decisión separada.
+La primera prueba local de `qwen3.5:2b-q4_K_M` usó una página sintética y devolvió HTTP 200 con tres hallazgos en español; las tres citas coincidieron con la fuente y la certeza fue `textual`. La salida de razonamiento extendido se desactivó después de que una llamada inicial agotara el timeout. Esto solo valida la conexión y el contrato con un texto pequeño; falta evaluar lotes mayores y la calidad de extracción, implementar el job de análisis por cola en Laravel y revisar resultados con una persona. El modelo no determina culpabilidad ni sustituye revisión jurídica. Cualquier proveedor externo queda fuera de esta fase y requerirá una decisión separada.
 
 El contrato se prueba sin credenciales ni servicios externos:
 
