@@ -15,8 +15,7 @@ final class ResolverTurnoAudiencia
         $turnosPorEtapa = $configuracion['turnos_por_etapa'] ?? [];
         $snapshot = $turnosPorEtapa[(string) $idEtapa] ?? $turnosPorEtapa[$idEtapa] ?? [];
 
-        return array_values(array_filter($snapshot, fn ($turno): bool =>
-            is_array($turno)
+        return array_values(array_filter($snapshot, fn ($turno): bool => is_array($turno)
             && isset($turno['orden'], $turno['rol'])
             && is_numeric($turno['orden'])
             && is_string($turno['rol'])

@@ -33,8 +33,7 @@ final class SimulacionController extends Controller
                     ->whereHas('destino', fn ($destino) => $destino->where('activo', true)),
                 'etapaActual.transicionesSalientes.destino',
             ])
-            ->withCount(['intervenciones as intervenciones_etapa_actual_count' => fn ($query) =>
-                $query->whereColumn('intervenciones.id_etapa', 'simulaciones.id_etapa_actual')])
+            ->withCount(['intervenciones as intervenciones_etapa_actual_count' => fn ($query) => $query->whereColumn('intervenciones.id_etapa', 'simulaciones.id_etapa_actual')])
             ->orderByDesc('fecha_creacion')
             ->orderByDesc('id_simulacion')
             ->paginate(20);
@@ -125,8 +124,7 @@ final class SimulacionController extends Controller
             'intervenciones.participante',
         ]);
 
-        $simulacion->loadCount(['intervenciones as intervenciones_etapa_actual_count' => fn ($query) =>
-            $query->whereColumn('intervenciones.id_etapa', 'simulaciones.id_etapa_actual')]);
+        $simulacion->loadCount(['intervenciones as intervenciones_etapa_actual_count' => fn ($query) => $query->whereColumn('intervenciones.id_etapa', 'simulaciones.id_etapa_actual')]);
         $simulacion->setAttribute(
             'turno_actual',
             $resolverTurnos->resumir($simulacion, (int) $simulacion->intervenciones_etapa_actual_count),
