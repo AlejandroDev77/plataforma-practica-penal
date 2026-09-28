@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+from pathlib import Path
 
 import pymupdf
 import pytest
@@ -93,10 +94,43 @@ def test_scan_without_tesseract_is_reported_as_unreadable_not_as_success(
 ) -> None:
     monkeypatch.setattr("app.modules.ingestion.service.shutil.which", lambda _: None)
 
-    result = DocumentExtractor(Settings()).extract("escaneo.pdf", make_pdf(None))
+    result = DocumentExtractor(Settings(ocr_tesseract_path=None)).extract(
+        "escaneo.pdf", make_pdf(None)
+    )
 
     assert result.pages[0].text == ""
     assert result.pages[0].is_readable is False
+    assert result.warnings[0].code == "ocr_unavailable"
+
+
+def test_configured_tesseract_path_works_without_system_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    executable = tmp_path / "tesseract.exe"
+    executable.touch()
+    monkeypatch.setattr("app.modules.ingestion.service.shutil.which", lambda _: None)
+    monkeypatch.setattr(
+        pymupdf.Page,
+        "get_textpage_ocr",
+        lambda self, **kwargs: self.get_textpage(),
+    )
+
+    result = DocumentExtractor(Settings(ocr_tesseract_path=str(executable))).extract(
+        "escaneo.pdf", make_pdf(None)
+    )
+
+    assert result.warnings[0].code == "text_not_recognized"
+
+
+def test_invalid_configured_tesseract_path_is_reported_as_unavailable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr("app.modules.ingestion.service.shutil.which", lambda _: "tesseract")
+
+    result = DocumentExtractor(
+        Settings(ocr_tesseract_path=str(tmp_path / "missing.exe"))
+    ).extract("escaneo.pdf", make_pdf(None))
+
     assert result.warnings[0].code == "ocr_unavailable"
 
 

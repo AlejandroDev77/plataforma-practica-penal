@@ -232,7 +232,10 @@ class DocumentExtractor:
         )
 
     def _ocr_page(self, page: pymupdf.Page) -> tuple[str, str | None]:
-        if shutil.which("tesseract") is None:
+        executable = self.settings.ocr_tesseract_path
+        if (executable and not Path(executable).is_file()) or (
+            not executable and shutil.which("tesseract") is None
+        ):
             return "", "ocr_unavailable"
 
         tessdata = self.settings.ocr_tessdata_path
