@@ -37,6 +37,17 @@ Ollama se activa solo con `LLM_PROVIDER=ollama` y `LLM_MODEL` configurado; la op
 
 La prueba sintética inicial de `qwen3.5:2b-q4_K_M` en el servicio devolvió tres hallazgos en español y citas coincidentes. Después se probó el flujo completo con una página sintética de 96 caracteres: Laravel la envió a la cola, Ollama respondió en loopback en 21 segundos y el resultado quedó guardado con una cita verificable y estado `No confirmado`. Esto comprueba el recorrido técnico con una entrada pequeña, no la calidad jurídica ni el comportamiento con lotes grandes; los resultados aún requieren revisión humana. En Windows, Ollama debe ejecutarse con `OLLAMA_NO_CLOUD=1` y enlazado a loopback. El modelo no determina culpabilidad ni sustituye revisión jurídica. Cualquier proveedor externo queda fuera de esta fase y requerirá una decisión separada.
 
+La regresión optativa `tests/test_analysis_local_acceptance.py` evalúa un caso sintético inédito y comprueba resumen, hechos, ausencia de delitos inventados, vacíos y citas. Se ejecuta con `JURISSIM_EJECUTAR_OLLAMA_LOCAL=1` y `OLLAMA_NO_CLOUD=1`; nunca usa expedientes reales ni un proveedor externo. En la primera evaluación de `qwen3.5:2b-q4_K_M`, el modelo omitió el resumen y los hechos y generó un extracto con puntos suspensivos; el servicio rechazó el resultado. Se reforzó el prompt, se hizo `summary` obligatorio solo en el esquema enviado a Ollama y se añadió el error seguro `local_model_incomplete_analysis`. En la siguiente evaluación, el modelo produjo resumen y hechos y no inventó delitos, pero omitió la fecha central. Se añadió un complemento determinista que conserva en cronología las fechas explícitas en español o ISO junto con la oración literal de origen; respeta el máximo de 150 eventos y vuelve a validar la cita contra la página. Tras este ajuste, la regresión del caso sintético inédito pasó en 34 segundos. Es una prueba de recorrido técnico con una muestra, no demuestra cobertura de expedientes variados ni calidad jurídica; hay que ampliar la batería sintética y mantener la revisión humana.
+
+Para repetir la evaluación desde PowerShell:
+
+```powershell
+cd ai-service
+$env:OLLAMA_NO_CLOUD = "1"
+$env:JURISSIM_EJECUTAR_OLLAMA_LOCAL = "1"
+.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider tests\test_analysis_local_acceptance.py
+```
+
 El contrato se prueba sin credenciales ni servicios externos:
 
 ```powershell
