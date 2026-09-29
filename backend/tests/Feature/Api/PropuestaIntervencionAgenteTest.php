@@ -8,7 +8,6 @@ use App\Models\ParticipanteSimulacion;
 use App\Models\RevisionAnalisis;
 use App\Models\Simulacion;
 use App\Modules\Simulations\Application\Contracts\SimulationAgentGateway;
-use App\Services\Recuperacion\BuscarFuentesSimulacion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
@@ -53,7 +52,6 @@ class PropuestaIntervencionAgenteTest extends TestCase
                 '_meta' => ['provider' => 'ollama', 'model' => 'qwen3.5:2b-q4_K_M'],
             ]);
         $this->app->instance(SimulationAgentGateway::class, $gateway);
-        $this->app->instance(BuscarFuentesSimulacion::class, $this->buscadorSinResultados());
         Sanctum::actingAs($simulacion->usuario);
 
         $this->postJson('/api/v1/simulaciones/'.$simulacion->getKey().'/propuesta-intervencion', [
@@ -100,7 +98,6 @@ class PropuestaIntervencionAgenteTest extends TestCase
             'requires_human_review' => true,
         ]);
         $this->app->instance(SimulationAgentGateway::class, $gateway);
-        $this->app->instance(BuscarFuentesSimulacion::class, $this->buscadorSinResultados());
         Sanctum::actingAs($simulacion->usuario);
 
         $this->postJson('/api/v1/simulaciones/'.$simulacion->getKey().'/propuesta-intervencion')
@@ -192,16 +189,5 @@ class PropuestaIntervencionAgenteTest extends TestCase
         ]);
 
         return [$simulacion->fresh(['usuario', 'expediente']), $pagina, $juez];
-    }
-
-    private function buscadorSinResultados(): BuscarFuentesSimulacion
-    {
-        $buscador = Mockery::mock(BuscarFuentesSimulacion::class);
-        $buscador->shouldReceive('ejecutar')->once()->andReturn([
-            'expediente' => ['resultados' => [], 'cantidad_fragmentos' => 0, 'estado_indice' => 'sin_indice'],
-            'juridica' => ['resultados' => [], 'cantidad_fuentes' => 0, 'cantidad_fragmentos' => 0],
-        ]);
-
-        return $buscador;
     }
 }
