@@ -1,6 +1,6 @@
 # Modelo de datos inicial — JURISSIM
 
-Estado: esquema inicial implementado, validado con PostgreSQL de pruebas aislado e integrado en `develop` mediante PR #1. Autenticación, CRUD de expedientes/archivos, extracción y análisis versionado con revisión humana también están integrados. La simulación tiene implementados el avance por transiciones, la API autenticada y limitada al propietario, y el registro de intervenciones bajo turnos configurables (PR #9–#11); aún no existen agentes, memoria conversacional funcional con fuentes, RAG ni evaluación.
+Estado: esquema inicial implementado, validado con PostgreSQL de pruebas aislado e integrado en `develop` mediante PR #1. Autenticación, CRUD de expedientes/archivos, extracción y análisis versionado con revisión humana también están integrados. La simulación tiene implementados el avance por transiciones, la API autenticada y limitada al propietario, y el registro de intervenciones bajo turnos configurables (PR #9–#11). En la rama local de memoria se añade persistencia y validación de citas asociadas a cada intervención; todavía no hay agentes, búsqueda RAG integrada ni evaluación.
 
 El contrato Pydantic, la persistencia interna versionada y la revisión humana de `analisis_expediente.datos_estructurados` están implementados. Aún no existe un productor que genere esos resultados: el proveedor/modelo y el tratamiento externo del texto siguen pendientes. Los datos derivados permanecen sin confirmar hasta su revisión.
 
