@@ -1,5 +1,5 @@
 import { httpClient } from '../../../shared/api/http-client'
-import type { HearingType, InterventionProposal, PaginatedSimulations, Simulation } from '../model/simulation'
+import type { HearingType, InterventionProposal, PaginatedSimulations, Simulation, SimulationEvaluation } from '../model/simulation'
 
 export async function listHearingTypes(): Promise<HearingType[]> {
   const response = await httpClient.get<{ data: HearingType[] }>('/api/v1/tipos-audiencia')
@@ -31,6 +31,16 @@ export async function addIntervention(id: number, content: string): Promise<Simu
 
 export async function requestInterventionProposal(id: number): Promise<InterventionProposal> {
   const response = await httpClient.post<{ data: InterventionProposal }>(`/api/v1/simulaciones/${id}/propuesta-intervencion`)
+  return response.data.data
+}
+
+export async function getLatestSimulationEvaluation(id: number): Promise<SimulationEvaluation | null> {
+  const response = await httpClient.get<{ data: SimulationEvaluation | null }>(`/api/v1/simulaciones/${id}/evaluacion`)
+  return response.data.data
+}
+
+export async function requestSimulationEvaluation(id: number): Promise<SimulationEvaluation> {
+  const response = await httpClient.post<{ data: SimulationEvaluation }>(`/api/v1/simulaciones/${id}/evaluacion`)
   return response.data.data
 }
 

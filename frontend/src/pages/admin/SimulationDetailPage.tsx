@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, Clock3, FileText, RefreshCw, Send, Sparkles } from 'lucide-react'
 import { PageHeading } from '../../components/ui/AdminUi'
 import { getAuthErrorMessage } from '../../features/auth/api/auth-api'
+import { SimulationEvaluationPanel } from '../../features/simulations/components/SimulationEvaluationPanel'
 import { addIntervention, advanceSimulation, requestInterventionProposal } from '../../features/simulations/api/simulations-api'
 import { simulationsQueryKey, useSimulation } from '../../features/simulations/model/use-simulations'
 import type { ParticipantRole, SimulationIntervention } from '../../features/simulations/model/simulation'
@@ -149,6 +150,9 @@ export function SimulationDetailPage() {
       {advance.isError && <p className="form-error" role="alert">{getAuthErrorMessage(advance.error)}</p>}
     </section>}
 
-    {simulation.status === 'finalizada' && <div className="simulation-readiness simulation-finished" role="status"><Check size={18} /><div><strong>Práctica finalizada</strong><p>Esta sesión permanece disponible para consulta y no admite nuevas intervenciones.</p></div></div>}
+    {simulation.status === 'finalizada' && <>
+      <div className="simulation-readiness simulation-finished" role="status"><Check size={18} /><div><strong>Práctica finalizada</strong><p>Esta sesión permanece disponible para consulta y no admite nuevas intervenciones.</p></div></div>
+      <SimulationEvaluationPanel simulationId={id} />
+    </>}
   </>
 }

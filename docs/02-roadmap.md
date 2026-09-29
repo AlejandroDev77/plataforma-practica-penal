@@ -128,6 +128,9 @@ audiencia interactiva coherente con expediente y normas.
 ---
 
 ## Fase 8 — Evaluación
+
+Estado: el backend de evaluación encolada y la interfaz de resultados están implementados en la rama `funcionalidad/evaluaciones`: selecciona una rúbrica activa no ambigua desde el servidor, guarda la versión aplicada, evalúa solo después del cierre, valida puntajes y citas de la defensa y devuelve fortalezas, errores y recomendaciones con revisión humana obligatoria. Ollama sigue desactivado por defecto y solo se permite en loopback. Una prueba de aceptación sintética con `qwen3.5:2b-q4_K_M` pasó; no demuestra consistencia ni calidad jurídica. No se precargaron rúbricas: la revisión profesional de criterios y una batería sintética más amplia siguen pendientes.
+
 Evaluar:
 - uso del expediente;
 - argumentación;

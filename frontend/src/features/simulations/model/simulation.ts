@@ -84,3 +84,41 @@ export interface InterventionProposal {
   sources: Array<{ id: number; kind: string; title: string; excerpt: string; locator: string }>
   meta: { provider: string | null; model: string | null }
 }
+
+export type SimulationEvaluationStatus = 'pendiente' | 'procesando' | 'procesado' | 'error'
+
+export interface EvaluationPoint {
+  criterion_id: number
+  criterion_name: string
+  content: string
+  evidence: { intervention_order: number; quote: string }
+}
+
+export interface EvaluationRecommendation {
+  criterion_id: number
+  criterion_name: string
+  content: string
+}
+
+export interface SimulationEvaluation {
+  id: number
+  status: SimulationEvaluationStatus
+  score_percent: number | string | null
+  summary: string | null
+  strengths: EvaluationPoint[]
+  errors: EvaluationPoint[]
+  recommendations: EvaluationRecommendation[]
+  requires_human_review: true
+  message: string | null
+  rubric: { name: string; version: number } | null
+  criteria: Array<{
+    criterion_id: number
+    name: string | null
+    score: number | string
+    max_score: number | string | null
+    feedback: string
+    evidence: string | null
+  }>
+  created_at: string | null
+  evaluated_at: string | null
+}
