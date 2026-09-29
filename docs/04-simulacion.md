@@ -1,6 +1,6 @@
 # Motor de simulación
 
-Estado: el motor de audiencia y sus turnos configurables están integrados mediante PR #9–#11; la persistencia de fuentes por intervención, mediante PR #13; y la búsqueda RAG separada para el expediente y fuentes jurídicas, mediante PR #14. El catálogo de etapas y transiciones está sembrado para medidas cautelares. La API autenticada permite crear simulaciones a partir de un análisis aprobado, consultar las del expediente propietario, registrar intervenciones de texto y avanzar únicamente por transiciones activas. No hay turnos jurídicos precargados: hasta que se incorporen reglas revisadas, las etapas no aceptan intervenciones. No hay agentes ni generación automática; no se llama a un modelo.
+Estado: el motor de audiencia y sus turnos configurables están integrados mediante PR #9–#11; la persistencia de fuentes por intervención, mediante PR #13; y la búsqueda RAG separada para el expediente y fuentes jurídicas, mediante PR #14. El catálogo de etapas y transiciones está sembrado para medidas cautelares. La API autenticada permite crear simulaciones a partir de un análisis aprobado, consultar las del expediente propietario, registrar intervenciones de texto y avanzar únicamente por transiciones activas. No hay turnos jurídicos precargados: hasta que se incorporen reglas revisadas, las etapas no aceptan intervenciones. Se implementa por separado un servicio interno para proponer texto con Ollama local; sigue desactivado por defecto y todavía no está conectado al orquestador ni persiste intervenciones.
 
 ## Objetivo
 Controlar la audiencia; el LLM NO controla el flujo completo.
@@ -89,3 +89,9 @@ Cada intervención debe recibir:
 - reglas de actuación.
 
 Evitar pasar toda la conversación si no es necesario.
+
+### Propuesta local aislada
+
+POST /api/v1/simulations/proposals ofrece una pieza interna para proponer una respuesta breve de juez o fiscal. Requiere el token Bearer compartido con FastAPI; acepta solo esos roles de agente, un turno acotado, hasta 20 afirmaciones con tipo, certeza, atribución y fuentes, 8 extractos fuente y 12 mensajes de transcripción, con límite total de contexto. Ollama debe estar habilitado explícitamente con LLM_PROVIDER=ollama y usar la URL de loopback ya validada por configuración; el valor predeterminado continúa desactivado. La respuesta incluye el rol, el texto propuesto, las IDs de fuente recibidas y el indicador obligatorio requires_human_review=true. Se rechazan los roles distintos al solicitado y las referencias fuente que el servicio no recibió. Estos controles de formato y procedencia no demuestran que todas las afirmaciones generadas sean correctas.
+
+El endpoint no consulta la base de datos, no recibe texto completo de expedientes por sí mismo, no guarda ni registra intervenciones y no altera etapas. La futura integración Laravel debe obtener rol, instrucción de turno, hechos, fuentes y transcripción desde recursos autorizados del servidor; nunca debe aceptar esos datos como autoridad desde el navegador. La instrucción de turno debe provenir de una regla activa revisada. Mientras no existan turnos activos revisados, no hay solicitudes válidas desde el orquestador. El texto generado es una propuesta educativa, no decisión ni asesoramiento jurídico; debe mantenerse bajo revisión humana y no inventar hechos o normas.
