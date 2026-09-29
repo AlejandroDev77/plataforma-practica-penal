@@ -1,6 +1,6 @@
 # Motor de simulación
 
-Estado: integrado en `develop` mediante PR #9–#11. El catálogo de etapas y transiciones está sembrado para medidas cautelares. La API autenticada permite crear simulaciones a partir de un análisis aprobado, consultar las del expediente propietario, registrar intervenciones de texto y avanzar únicamente por transiciones activas. Los turnos por etapa se configuran por rol, se copian a la simulación al crearla y regulan el registro de intervenciones y el avance. No hay turnos jurídicos precargados: hasta que se incorporen reglas revisadas, las etapas no aceptan intervenciones. No hay agentes ni generación automática; no se llama a un modelo.
+Estado: el motor de audiencia y sus turnos configurables están integrados mediante PR #9–#11; la persistencia de fuentes por intervención, mediante PR #13; y la búsqueda RAG separada para el expediente y fuentes jurídicas, mediante PR #14. El catálogo de etapas y transiciones está sembrado para medidas cautelares. La API autenticada permite crear simulaciones a partir de un análisis aprobado, consultar las del expediente propietario, registrar intervenciones de texto y avanzar únicamente por transiciones activas. No hay turnos jurídicos precargados: hasta que se incorporen reglas revisadas, las etapas no aceptan intervenciones. No hay agentes ni generación automática; no se llama a un modelo.
 
 ## Objetivo
 Controlar la audiencia; el LLM NO controla el flujo completo.

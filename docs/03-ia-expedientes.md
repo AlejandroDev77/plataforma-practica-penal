@@ -61,7 +61,7 @@ El contrato, la persistencia versionada y la revisión humana ya están integrad
 
 ## Recuperación textual local del expediente
 
-La rama `funcionalidad/rag-expediente` añade una primera recuperación lexical sobre PostgreSQL, sin embeddings ni proveedor externo. Al terminar la extracción, una tarea en cola divide cada página legible en fragmentos de hasta 1.600 caracteres, con 180 caracteres de solapamiento, y los guarda enlazados al archivo y a la página. Se puede volver a indexar un expediente existente desde una ruta autenticada.
+La recuperación lexical del expediente está integrada en `develop` mediante el PR #14 y usa PostgreSQL, sin embeddings ni proveedor externo. Al terminar la extracción, una tarea en cola divide cada página legible en fragmentos de hasta 1.600 caracteres, con 180 caracteres de solapamiento, y los guarda enlazados al archivo y a la página. Se puede volver a indexar un expediente existente desde una ruta autenticada.
 
 La consulta usa el diccionario español de búsqueda de texto completo de PostgreSQL y devuelve solo coincidencias del expediente del usuario autenticado, con archivo, página y localizador. Un índice GIN parcial mantiene la búsqueda en los fragmentos privados. La puntuación solo ordena coincidencias textuales; no es certeza, validación jurídica ni una afirmación sobre los hechos. Esta fase recupera evidencia y no genera respuestas ni llama al modelo local.
 
@@ -87,8 +87,8 @@ La ruta interna puede encolar la indexación solo de esas fuentes elegibles. No 
 
 Cada dato futuro deberá conservar archivo/página cuando exista, estado (`confirmado`, `inferido`, `incierto` o `faltante`) y evidencia. No completar información ausente ni convertir OCR dudoso en un hecho.
 
-## RAG jurídico futuro
+## Corpus jurídico oficial pendiente y evolución del RAG
 
-Mantener separada la colección del conocimiento jurídico validado. Nunca mezclarla con la del expediente actual sin conservar procedencia, versión y localizador.
+La búsqueda separada de fuentes jurídicas vigentes está integrada mediante el PR #14. La carga del corpus jurídico oficial boliviano aún requiere curación y revisión competente. Mantener separada esta colección del expediente actual y conservar procedencia, versión y localizador.
 
 Antes de probar con casos reales hace falta acordar consentimiento, anonimización, retención y revisión jurídica de protección de datos. Las pruebas actuales usan únicamente archivos sintéticos.

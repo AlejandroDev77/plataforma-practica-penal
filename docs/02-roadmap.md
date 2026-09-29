@@ -2,9 +2,9 @@
 
 ## Estado y regla de avance
 
-La base, autenticación, expedientes y extracción están integrados mediante los PR #1–#4; el análisis versionado, la revisión humana y sus actualizaciones, incluida la configuración persistente de OCR, mediante los PR #5–#8; el motor de transiciones, la API autenticada de simulaciones y los turnos configurables mediante los PR #9–#11. Los checks requeridos pasaron antes de cada merge. `main` no se ha modificado.
+La base, autenticación, expedientes y extracción están integrados mediante los PR #1–#4; el análisis versionado, la revisión humana y sus actualizaciones, incluida la configuración persistente de OCR, mediante los PR #5–#8; el motor de transiciones, la API autenticada de simulaciones y los turnos configurables mediante los PR #9–#11; la persistencia de citas por intervención mediante el PR #13; y la recuperación RAG local del expediente y fuentes jurídicas mediante el PR #14. Los checks requeridos pasaron antes de cada merge. `main` no se ha modificado.
 
-El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis, la API base de simulaciones y el control de turnos de texto por rol ya están integrados. La recuperación textual del expediente y la consulta jurídica separada están implementadas localmente en `funcionalidad/rag-expediente`; aún no están integradas en `develop` y no llaman a un LLM. La carga del corpus oficial sigue pendiente de curación y revisión competente. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
+El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis, la API base de simulaciones, los turnos de texto por rol, la persistencia de citas y la recuperación textual separada del expediente y fuentes jurídicas ya están integrados en `develop` (PR #13–#14). La búsqueda usa PostgreSQL local, sin embeddings ni llamadas a LLM. La carga del corpus oficial sigue pendiente de curación y revisión competente. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
 
 ## Fase 0 — Base
 - crear repositorio;
@@ -88,8 +88,8 @@ Estado: el esquema Pydantic, la persistencia interna versionada, las citas tipad
 ---
 
 ## Fase 5 — RAG
-- [x] RAG del expediente: recuperación textual local con citas de archivo/página (implementada y probada en `funcionalidad/rag-expediente`; pendiente de integración).
-- [x] RAG jurídico: indexación/consulta separada limitada a fuentes validadas y vigentes; aún falta curar y cargar el corpus oficial.
+- [x] RAG del expediente: recuperación textual local con citas de archivo/página, integrada en `develop` mediante PR #14.
+- [x] RAG jurídico: indexación y consulta separada limitada a fuentes validadas y vigentes (PR #14); curar y cargar el corpus oficial sigue pendiente.
 
 Resultado:
 la IA recupera solo fragmentos relevantes con referencias.
@@ -100,13 +100,13 @@ la IA recupera solo fragmentos relevantes con referencias.
 - [x] controlar inicio y avance usando etapas y transiciones configuradas;
 - [x] configurar turnos por etapa, validar el rol del usuario al registrar intervenciones de texto y no avanzar mientras queden turnos configurados;
 - [ ] definir actos procesales específicos permitidos por rol, sujetos a revisión jurídica;
-- [ ] conservar memoria de intervenciones con fuentes;
+- [x] conservar referencias verificadas de fuentes en intervenciones (PR #13);
 - [x] exponer creación, consulta, registro de intervenciones y avance mediante API autenticada y limitada al propietario.
 
 MVP:
 medidas cautelares.
 
-Estado: los PR #9–#11 integraron el avance por transiciones activas, la API limitada al propietario y el registro de intervenciones de texto bajo turnos configurables por rol. No se precargaron turnos jurídicos: requieren revisión del equipo competente. No hay agentes ni memoria conversacional funcional con fuentes; el siguiente trabajo jurídico depende de definir y revisar esas reglas.
+Estado: los PR #9–#11 integraron el avance por transiciones activas, la API limitada al propietario y el registro de intervenciones de texto bajo turnos configurables por rol. El PR #13 agregó el registro de referencias verificadas por intervención. No se precargaron turnos jurídicos: requieren revisión del equipo competente. Aún no hay agentes ni memoria conversacional automática; el siguiente trabajo jurídico depende de definir y revisar esas reglas.
 
 ---
 
