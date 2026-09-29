@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { ArrowLeft, ChevronLeft, ChevronRight, Download, FileText, RefreshCw, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge, Modal, PageHeading } from '../../components/ui/AdminUi'
@@ -9,6 +9,7 @@ import { casesQueryKey, useCase, useCaseFilePages } from '../../features/cases/m
 import type { CaseFile, LegalCase, ProcessingStatus } from '../../features/cases/model/case'
 import { getAuthErrorMessage } from '../../features/auth/api/auth-api'
 import { CaseAnalysisSection } from '../../features/cases/components/CaseAnalysisSection'
+import { CaseSimulationsSection } from '../../features/simulations/components/CaseSimulationsSection'
 import type { SelectedAnalysisPage } from '../../features/cases/model/case-analysis'
 import { shortDate } from '../../shared/lib/admin-utils'
 
@@ -33,6 +34,7 @@ function formatSize(bytes: number): string {
 
 export function CaseDetailPage() {
   const { id: rawId } = useParams()
+  const location = useLocation()
   const id = Number(rawId)
   const queryClient = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -48,6 +50,12 @@ export function CaseDetailPage() {
   const selectedPages = pageSelection.caseId === id ? pageSelection.pages : []
   const selectedPageIds = new Set(selectedPages.map((item) => item.id))
   const selectedCharacters = selectedPages.reduce((total, item) => total + item.characters, 0)
+
+  useEffect(() => {
+    if (location.hash === '#simulaciones') {
+      window.requestAnimationFrame(() => document.getElementById('simulaciones')?.scrollIntoView({ block: 'start' }))
+    }
+  }, [location.hash, id])
 
   function setSelectedPages(next: SelectedAnalysisPage[] | ((current: SelectedAnalysisPage[]) => SelectedAnalysisPage[])) {
     setPageSelection((current) => {
@@ -237,6 +245,8 @@ export function CaseDetailPage() {
       selectedPages={selectedPages}
       onClearSelection={() => setSelectedPages([])}
     />
+
+    <CaseSimulationsSection caseId={id} />
 
     {removing && <Modal title="Retirar documento" description="Se elimina el archivo privado y los análisis generados que lo citan, para no conservar resultados derivados del documento." onClose={() => setRemoving(null)}>
       <div className="modal-body"><p>¿Eliminar <strong>{removing.name}</strong>? Esta acción no se puede deshacer desde la aplicación.</p><div className="modal-actions">

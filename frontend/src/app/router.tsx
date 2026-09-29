@@ -4,6 +4,7 @@ import { AuthPage } from '../pages/auth/AuthPage'
 import {
   ActivityPage,
   AppShell,
+  AudienciasPage,
   CaseDetailPage,
   DashboardPage,
   DeferredPage,
@@ -12,6 +13,7 @@ import {
   PropuestasTurnosPage,
   RecordsPage,
   RolesPage,
+  SimulationDetailPage,
   SettingsPage,
 } from './lazy-pages'
 
@@ -29,11 +31,13 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <DeferredPage><DashboardPage /></DeferredPage> },
           { path: 'expedientes', element: <DeferredPage><ExpedientesPage /></DeferredPage> },
-          ...(['usuarios', 'documentos', 'biblioteca', 'audiencias'] as const).map((section) => ({
+          ...(['usuarios', 'documentos', 'biblioteca'] as const).map((section) => ({
             path: section,
             element: <DeferredPage><RecordsPage key={section} section={section} /></DeferredPage>,
           })),
+          { path: 'audiencias', element: <DeferredPage><AudienciasPage /></DeferredPage> },
           { path: 'expedientes/:id', element: <DeferredPage><CaseDetailPage /></DeferredPage> },
+          { path: 'simulaciones/:id', element: <DeferredPage><SimulationDetailPage /></DeferredPage> },
           { path: 'configuracion', element: <DeferredPage><SettingsPage /></DeferredPage> },
           { path: 'configuracion/turnos', element: <DeferredPage><PropuestasTurnosPage /></DeferredPage> },
           { path: 'roles', element: <DeferredPage><RolesPage /></DeferredPage> },

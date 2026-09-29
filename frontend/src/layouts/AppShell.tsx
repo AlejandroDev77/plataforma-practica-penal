@@ -30,7 +30,7 @@ export function AppShell() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
-  const title = navigationGroups.flatMap((group) => group.items).find((item) => item.path === location.pathname)?.title ?? (location.pathname.startsWith('/configuracion/turnos') ? 'Propuestas de turnos' : 'Detalle de expediente')
+  const title = navigationGroups.flatMap((group) => group.items).find((item) => item.path === location.pathname)?.title ?? (location.pathname.startsWith('/configuracion/turnos') ? 'Propuestas de turnos' : location.pathname.startsWith('/simulaciones/') ? 'Práctica de audiencia' : 'Detalle de expediente')
   const displayName = user?.name ?? profile.name
   const initials = displayName.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase()
   const caseResults = (caseQuery.data?.data ?? []).map((item) => ({
