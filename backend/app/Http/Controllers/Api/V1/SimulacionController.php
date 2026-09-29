@@ -117,7 +117,11 @@ final class SimulacionController extends Controller
         ResolverTurnoAudiencia $resolverTurnos,
     ): JsonResponse {
         $registro = $request->user()->simulaciones()->whereKey($simulacion)->firstOrFail();
-        $actualizada = $registrar->ejecutar($registro, $request->validated('contenido'));
+        $actualizada = $registrar->ejecutar(
+            $registro,
+            $request->validated('contenido'),
+            $request->validated('source_fragment_ids', []),
+        );
 
         return SimulacionResource::make($this->cargarDetalles($actualizada, $resolverTurnos))
             ->response()
@@ -154,6 +158,7 @@ final class SimulacionController extends Controller
             'etapaActual.transicionesSalientes.destino',
             'participantes',
             'intervenciones.participante',
+            'intervenciones.fuentes',
         ]);
 
         $simulacion->loadCount(['intervenciones as intervenciones_etapa_actual_count' => fn ($query) => $query->whereColumn('intervenciones.id_etapa', 'simulaciones.id_etapa_actual')]);
