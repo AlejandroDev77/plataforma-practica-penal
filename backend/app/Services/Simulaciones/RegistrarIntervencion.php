@@ -10,11 +10,15 @@ use Illuminate\Validation\ValidationException;
 
 final class RegistrarIntervencion
 {
-    public function __construct(private readonly ResolverTurnoAudiencia $turnos) {}
+    public function __construct(
+        private readonly ResolverTurnoAudiencia $turnos,
+        private readonly PrepararFuentesIntervencion $prepararFuentes,
+    ) {}
 
-    public function ejecutar(Simulacion $simulacion, string $contenido): Simulacion
+    /** @param list<int> $idsFragmento */
+    public function ejecutar(Simulacion $simulacion, string $contenido, array $idsFragmento = []): Simulacion
     {
-        return DB::transaction(function () use ($simulacion, $contenido): Simulacion {
+        return DB::transaction(function () use ($simulacion, $contenido, $idsFragmento): Simulacion {
             $actual = Simulacion::query()
                 ->whereKey($simulacion->getKey())
                 ->lockForUpdate()
@@ -60,9 +64,11 @@ final class RegistrarIntervencion
                 ]);
             }
 
+            $fuentes = $this->prepararFuentes->ejecutar($actual, $idsFragmento);
+
             $orden = (int) ($actual->intervenciones()->max('orden') ?? 0) + 1;
 
-            Intervencion::query()->create([
+            $intervencion = Intervencion::query()->create([
                 'id_simulacion' => $actual->getKey(),
                 'id_participante_simulacion' => $participante->getKey(),
                 'id_tipo_audiencia' => $actual->id_tipo_audiencia,
@@ -71,6 +77,14 @@ final class RegistrarIntervencion
                 'contenido' => trim($contenido),
                 'tipo_entrada' => 'texto',
             ]);
+
+            foreach ($fuentes as $fuente) {
+                $intervencion->fuentes()->create([
+                    'id_fragmento' => $fuente['fragmento']->getKey(),
+                    'fragmento_utilizado' => $fuente['extracto'],
+                    'metadatos' => $fuente['metadatos'],
+                ]);
+            }
 
             return $actual->fresh();
         }, 3);
