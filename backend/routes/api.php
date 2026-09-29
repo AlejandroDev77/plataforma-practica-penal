@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\PasswordResetLinkController;
+use App\Http\Controllers\Api\V1\PropuestaTurnoAudienciaController;
 use App\Http\Controllers\Api\V1\RecuperacionExpedienteController;
 use App\Http\Controllers\Api\V1\RecuperacionInternaController;
 use App\Http\Controllers\Api\V1\RecuperacionJuridicaController;
@@ -49,6 +50,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/recuperacion-juridica', [RecuperacionJuridicaController::class, 'search']);
 
         Route::get('/tipos-audiencia', [TipoAudienciaController::class, 'index']);
+        Route::get('/administracion/propuestas-turnos', [PropuestaTurnoAudienciaController::class, 'index']);
+        Route::post('/administracion/propuestas-turnos', [PropuestaTurnoAudienciaController::class, 'store']);
+        Route::put('/administracion/propuestas-turnos/{propuesta}', [PropuestaTurnoAudienciaController::class, 'update']);
+        Route::delete('/administracion/propuestas-turnos/{propuesta}', [PropuestaTurnoAudienciaController::class, 'destroy']);
         Route::get('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'index']);
         Route::post('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'store']);
         Route::get('/simulaciones/{simulacion}', [SimulacionController::class, 'show']);

@@ -8,6 +8,7 @@ export const RecordsPage = lazy(() => import('../pages/admin/RecordsPage').then(
 export const SettingsPage = lazy(() => import('../pages/admin/SettingsPage').then((module) => ({ default: module.SettingsPage })))
 export const RolesPage = lazy(() => import('../pages/admin/RolesPage').then((module) => ({ default: module.RolesPage })))
 export const ActivityPage = lazy(() => import('../pages/admin/ActivityPage').then((module) => ({ default: module.ActivityPage })))
+export const PropuestasTurnosPage = lazy(() => import('../pages/admin/PropuestasTurnosPage').then((module) => ({ default: module.PropuestasTurnosPage })))
 export const NotFoundPage = lazy(() => import('../pages/errors/NotFoundPage').then((module) => ({ default: module.NotFoundPage })))
 
 export function RouteLoading() {
