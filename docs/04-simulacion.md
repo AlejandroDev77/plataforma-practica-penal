@@ -43,6 +43,12 @@ No se han cargado secuencias jurídicas iniciales a propósito. Antes de configu
 
 La consola administrativa puede conservar propuestas de turnos en `propuestas_turnos_audiencia`, separadas de `turnos_etapa_audiencia`. Solo `administrador_plataforma` puede consultarlas o prepararlas; este permiso es técnico y no representa competencia jurídica. El endpoint fija el estado en `borrador`, ignora campos de estado/autor enviados por el cliente y no ofrece una operación de aprobación ni activación. Estas propuestas no se incluyen en instantáneas ni alteran simulaciones. No se precarga contenido jurídico. Definir quién revisará y aprobará reglas, y cómo una regla aprobada llegará al catálogo activo, queda pendiente de decisión y revisión profesional.
 
+### Propuesta Laravel de intervención
+
+`POST /api/v1/simulaciones/{simulacion}/propuesta-intervencion` solo consulta una simulación del usuario autenticado. No acepta del navegador el rol, la instrucción, los hechos, las fuentes ni el historial. Laravel resuelve el turno vigente desde la instantánea de la simulación y solo llama al servicio local si el rol es juez/fiscal, el turno contiene una instrucción administrada en el servidor, existe participante IA activo y la última revisión humana del análisis sigue aprobada. La columna nullable `turnos_etapa_audiencia.instruccion` y su instantánea permiten conservar esa regla técnica para simulaciones nuevas; siguen vacías y no se han añadido reglas jurídicas.
+
+Laravel verifica de nuevo las citas de hechos frente a páginas legibles del expediente propietario, limita hechos/fuentes/transcripción y solo devuelve el borrador junto con sus fuentes y metadatos locales. Toda respuesta incluye `requires_human_review: true`. No crea una intervención, no registra citas en `fuentes_intervencion` ni avanza la etapa. Si falta instrucción revisada o el proveedor local está desactivado/no disponible, no se genera contenido. La creación de una regla jurídica activa y cualquier decisión de revisión quedan fuera de este hito.
+
 ## Estado MVP
 
 ```text
