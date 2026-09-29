@@ -59,7 +59,15 @@ El primer contrato Pydantic está en `ai-service/app/modules/analysis/`. Recibe 
 
 El contrato, la persistencia versionada y la revisión humana ya están integrados mediante PR #7, pero todavía no se llama a un modelo. El proveedor inicial, el modelo y la política de transferencia de texto jurídico están pendientes; hasta que se decidan, no hay envío de datos a servicios LLM.
 
-RAG, embeddings y recuperación jurídica siguen siendo fases separadas.
+## Recuperación textual local del expediente
+
+La rama `funcionalidad/rag-expediente` añade una primera recuperación lexical sobre PostgreSQL, sin embeddings ni proveedor externo. Al terminar la extracción, una tarea en cola divide cada página legible en fragmentos de hasta 1.600 caracteres, con 180 caracteres de solapamiento, y los guarda enlazados al archivo y a la página. Se puede volver a indexar un expediente existente desde una ruta autenticada.
+
+La consulta usa el diccionario español de búsqueda de texto completo de PostgreSQL y devuelve solo coincidencias del expediente del usuario autenticado, con archivo, página y localizador. Un índice GIN parcial mantiene la búsqueda en los fragmentos privados. La puntuación solo ordena coincidencias textuales; no es certeza, validación jurídica ni una afirmación sobre los hechos. Esta fase recupera evidencia y no genera respuestas ni llama al modelo local.
+
+La búsqueda consulta fragmentos del expediente, no fuentes jurídicas. La consulta jurídica usa una ruta y una colección distintas, y solo devuelve fragmentos de fuentes marcadas como validadas, vigentes y dentro de su periodo de vigencia. Una huella del contenido evita servir fragmentos obsoletos si cambia el texto de la fuente antes de reindexarlo. La cita devuelve título, número de norma, versión, vigencia y extracto literal. En una simulación, `POST /api/v1/simulaciones/{simulacion}/fuentes` ofrece ambas búsquedas en listas separadas, limitando la evidencia privada al expediente vinculado a la simulación.
+
+La ruta interna puede encolar la indexación solo de esas fuentes elegibles. No se precarga ni se inventa corpus legal: la curación, carga y revisión por personas competentes de las normas bolivianas siguen pendientes. Esta búsqueda no genera respuestas ni llama al modelo local; embeddings y generación condicionada por recuperación continúan separados.
 
 ## Contexto estructurado objetivo
 
@@ -79,8 +87,8 @@ RAG, embeddings y recuperación jurídica siguen siendo fases separadas.
 
 Cada dato futuro deberá conservar archivo/página cuando exista, estado (`confirmado`, `inferido`, `incierto` o `faltante`) y evidencia. No completar información ausente ni convertir OCR dudoso en un hecho.
 
-## RAG futuro
+## RAG jurídico futuro
 
-Mantener separadas las colecciones del expediente actual y del conocimiento jurídico validado. Nunca mezclar ambas fuentes sin conservar procedencia, versión y localizador.
+Mantener separada la colección del conocimiento jurídico validado. Nunca mezclarla con la del expediente actual sin conservar procedencia, versión y localizador.
 
 Antes de probar con casos reales hace falta acordar consentimiento, anonimización, retención y revisión jurídica de protección de datos. Las pruebas actuales usan únicamente archivos sintéticos.

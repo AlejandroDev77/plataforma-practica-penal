@@ -1,6 +1,6 @@
 # Modelo de datos inicial — JURISSIM
 
-Estado: esquema inicial implementado, validado con PostgreSQL de pruebas aislado e integrado en `develop` mediante PR #1. Autenticación, CRUD de expedientes/archivos, extracción y análisis versionado con revisión humana también están integrados. La simulación tiene implementados el avance por transiciones, la API autenticada y limitada al propietario, y el registro de intervenciones bajo turnos configurables (PR #9–#11). En la rama local de memoria se añade persistencia y validación de citas asociadas a cada intervención; todavía no hay agentes, búsqueda RAG integrada ni evaluación.
+Estado: esquema inicial implementado, validado con PostgreSQL de pruebas aislado e integrado en `develop` mediante PR #1. Autenticación, CRUD de expedientes/archivos, extracción y análisis versionado con revisión humana también están integrados. La simulación incluye persistencia y validación de citas por intervención (PR #13). La rama `funcionalidad/rag-expediente` añade búsqueda textual del expediente y consulta separada de fuentes jurídicas vigentes, además de ofrecer ambas colecciones en simulaciones; la carga del corpus oficial y evaluación jurídica siguen pendientes.
 
 El contrato Pydantic, la persistencia interna versionada y la revisión humana de `analisis_expediente.datos_estructurados` están implementados. Aún no existe un productor que genere esos resultados: el proveedor/modelo y el tratamiento externo del texto siguen pendientes. Los datos derivados permanecen sin confirmar hasta su revisión.
 
@@ -35,6 +35,11 @@ Laravel, Sanctum y Spatie mantienen sus tablas/columnas estándar.
   y guardan `fragmento_utilizado`; no aceptan fuentes privadas de otro expediente.
 - `embedding` se incorpora con una migración pgvector opcional, sin dimensión inventada.
   `modelo_embedding` y `dimensiones_embedding` preparan la integración posterior.
+- La búsqueda inicial del expediente usa texto completo en español de PostgreSQL y un
+  índice GIN parcial; no necesita la migración opcional de pgvector ni almacena embeddings.
+- La recuperación jurídica consulta otra colección. Solo usa fuentes validadas, vigentes
+  y con contenido indexado que coincide con la huella actual de la fuente; no hay corpus
+  legal oficial incluido ni se mezclan fragmentos del expediente.
 - Audiencias, etapas y transiciones son configurables. Solo medidas cautelares está
   habilitada inicialmente. Existe un motor básico de avance controlado y una API de
   simulación; no representa una lógica jurídica definitiva ni incluye agentes.

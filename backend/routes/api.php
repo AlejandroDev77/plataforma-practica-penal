@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\PasswordResetLinkController;
+use App\Http\Controllers\Api\V1\RecuperacionExpedienteController;
+use App\Http\Controllers\Api\V1\RecuperacionInternaController;
+use App\Http\Controllers\Api\V1\RecuperacionJuridicaController;
 use App\Http\Controllers\Api\V1\RegisterController;
 use App\Http\Controllers\Api\V1\ResetPasswordController;
 use App\Http\Controllers\Api\V1\SimulacionController;
@@ -39,11 +42,15 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/expedientes/{expediente}/archivos/{archivo}', [ExpedienteArchivoController::class, 'destroy']);
         Route::get('/expedientes/{expediente}/analisis', [AnalisisExpedienteController::class, 'index']);
         Route::post('/expedientes/{expediente}/analisis/{analisis}/revisiones', [AnalisisExpedienteController::class, 'storeRevision']);
+        Route::post('/expedientes/{expediente}/recuperacion', [RecuperacionExpedienteController::class, 'search']);
+        Route::post('/expedientes/{expediente}/recuperacion/indexar', [RecuperacionExpedienteController::class, 'indexar']);
+        Route::post('/recuperacion-juridica', [RecuperacionJuridicaController::class, 'search']);
 
         Route::get('/tipos-audiencia', [TipoAudienciaController::class, 'index']);
         Route::get('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'index']);
         Route::post('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'store']);
         Route::get('/simulaciones/{simulacion}', [SimulacionController::class, 'show']);
+        Route::post('/simulaciones/{simulacion}/fuentes', [SimulacionController::class, 'fuentes']);
         Route::post('/simulaciones/{simulacion}/intervenciones', [SimulacionController::class, 'storeIntervencion']);
         Route::post('/simulaciones/{simulacion}/avanzar', [SimulacionController::class, 'avanzar']);
     });
@@ -51,4 +58,5 @@ Route::prefix('v1')->group(function (): void {
 
 Route::prefix('internal/v1')->middleware(VerificarTokenServicioInterno::class)->group(function (): void {
     Route::post('/expedientes/{expediente}/analisis', [AnalisisInternoController::class, 'store']);
+    Route::post('/fuentes-juridicas/{fuente}/indexar', [RecuperacionInternaController::class, 'indexarFuenteJuridica']);
 });
