@@ -1,26 +1,31 @@
-from typing import Any
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Response
+
+from app.api.v1.dependencies import require_service_token
+from app.core.config import Settings
+from app.modules.simulation.schemas import (
+    SimulationProposalEnvelope,
+    SimulationProposalRequest,
+)
+from app.modules.simulation.service import LocalSimulationService, SimulationServiceError
 
 router = APIRouter(prefix="/simulations", tags=["simulations"])
 
 
-class SimulationProposalRequest(BaseModel):
-    simulation_id: str
-    actor_id: str
-    phase: str
-    visible_facts: list[str] = Field(default_factory=list)
-    transcript: list[dict[str, Any]] = Field(default_factory=list)
-
-
-@router.post("/proposals")
-async def propose_action(payload: SimulationProposalRequest) -> dict[str, object]:
-    del payload
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail={
-            "code": "simulation_engine_not_configured",
-            "message": "El motor de simulación aún no tiene un proveedor configurado.",
-        },
-    )
+@router.post("/proposals", response_model=SimulationProposalEnvelope)
+async def propose_action(
+    payload: SimulationProposalRequest,
+    settings: Annotated[Settings, Depends(require_service_token)],
+    response: Response,
+) -> SimulationProposalEnvelope:
+    try:
+        proposal = await LocalSimulationService(settings).propose(payload)
+        response.headers["X-Jurissim-Simulation-Provider"] = settings.llm_provider
+        response.headers["X-Jurissim-Simulation-Model"] = settings.llm_model or ""
+        return SimulationProposalEnvelope(data=proposal)
+    except SimulationServiceError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={"code": error.code, "message": error.message},
+        ) from error
