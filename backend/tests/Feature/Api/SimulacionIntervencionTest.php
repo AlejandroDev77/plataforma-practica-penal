@@ -35,7 +35,7 @@ class SimulacionIntervencionTest extends TestCase
             'disco' => 'local',
             'ruta_almacenamiento' => 'expedientes/'.$simulacion->id_expediente.'/declaracion.pdf',
             'tamano_bytes' => 128,
-            'estado_procesamiento' => 'procesado',
+            'estado_procesamiento' => 'error',
         ]);
         $pagina = $archivo->paginas()->create([
             'numero_pagina' => 2,
@@ -52,7 +52,7 @@ class SimulacionIntervencionTest extends TestCase
         ]);
         $fuenteCargada = $fragmento->fresh(['archivo', 'pagina']);
         $this->assertSame($simulacion->id_expediente, $fuenteCargada->archivo->id_expediente);
-        $this->assertSame('procesado', $fuenteCargada->archivo->estado_procesamiento);
+        $this->assertSame('error', $fuenteCargada->archivo->estado_procesamiento);
         $this->assertTrue($fuenteCargada->pagina->es_legible);
         $this->assertSame('La declaración identifica a Ana como testigo', $fuenteCargada->contenido);
         $this->assertSame('La declaración identifica a Ana como testigo del hecho.', $fuenteCargada->pagina->texto_extraido);
@@ -166,9 +166,23 @@ class SimulacionIntervencionTest extends TestCase
             'indice_fragmento' => 0,
             'metadatos' => ['md5_contenido_fuente' => md5('Una regla de prueba.')],
         ]);
+        $archivoSinPagina = $simulacion->expediente->archivos()->create([
+            'nombre_original' => 'sin-pagina.pdf',
+            'nombre_almacenado' => 'sin-pagina.pdf',
+            'tipo_mime' => 'application/pdf',
+            'extension' => 'pdf',
+            'disco' => 'local',
+            'ruta_almacenamiento' => 'expedientes/'.$simulacion->id_expediente.'/sin-pagina.pdf',
+            'tamano_bytes' => 64,
+            'estado_procesamiento' => 'procesado',
+        ]);
+        $fragmentoSinPagina = $archivoSinPagina->fragmentos()->create([
+            'contenido' => 'No hay localizador verificable para este fragmento.',
+            'indice_fragmento' => 0,
+        ]);
         Sanctum::actingAs($simulacion->usuario);
 
-        foreach ([$fragmentoAjeno, $fragmentoNoValidado] as $fragmento) {
+        foreach ([$fragmentoAjeno, $fragmentoNoValidado, $fragmentoSinPagina] as $fragmento) {
             $this->postJson('/api/v1/simulaciones/'.$simulacion->getKey().'/intervenciones', [
                 'contenido' => 'Intervención con referencia inválida.',
                 'source_fragment_ids' => [$fragmento->getKey()],

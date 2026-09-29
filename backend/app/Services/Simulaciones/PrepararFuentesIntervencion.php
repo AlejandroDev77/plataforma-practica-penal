@@ -57,15 +57,14 @@ final class PrepararFuentesIntervencion
             $archivo = $fragmento->archivo;
             $pagina = $fragmento->pagina;
 
-            if ($archivo === null || (int) $archivo->id_expediente !== (int) $simulacion->id_expediente
-                || $archivo->estado_procesamiento !== 'procesado') {
-                $this->fuenteInvalida();
-            }
-
-            if ($fragmento->id_pagina !== null && ($pagina === null
+            if ($archivo === null
+                || (int) $archivo->id_expediente !== (int) $simulacion->id_expediente
+                || ! in_array($archivo->estado_procesamiento, ['procesado', 'error'], true)
+                || $fragmento->id_pagina === null
+                || $pagina === null
                 || ! $pagina->es_legible
                 || (int) $pagina->id_archivo !== (int) $fragmento->id_archivo
-                || ! $this->contieneExtracto((string) $pagina->texto_extraido, $extracto))) {
+                || ! $this->contieneExtracto((string) $pagina->texto_extraido, $extracto)) {
                 $this->fuenteInvalida();
             }
 
