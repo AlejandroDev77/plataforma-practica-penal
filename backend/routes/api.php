@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AnalisisExpedienteController;
 use App\Http\Controllers\Api\V1\AnalisisInternoController;
 use App\Http\Controllers\Api\V1\CurrentUserController;
+use App\Http\Controllers\Api\V1\EvaluacionSimulacionController;
 use App\Http\Controllers\Api\V1\ExpedienteArchivoController;
 use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\LoginController;
@@ -57,11 +58,15 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'index']);
         Route::post('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'store']);
         Route::get('/simulaciones/{simulacion}', [SimulacionController::class, 'show']);
+        Route::get('/simulaciones/{simulacion}/evaluacion', [EvaluacionSimulacionController::class, 'latest']);
         Route::post('/simulaciones/{simulacion}/fuentes', [SimulacionController::class, 'fuentes']);
         Route::post('/simulaciones/{simulacion}/propuesta-intervencion', [SimulacionController::class, 'proponerIntervencion'])
             ->middleware('throttle:5,1');
         Route::post('/simulaciones/{simulacion}/intervenciones', [SimulacionController::class, 'storeIntervencion']);
         Route::post('/simulaciones/{simulacion}/avanzar', [SimulacionController::class, 'avanzar']);
+        Route::post('/simulaciones/{simulacion}/evaluacion', [EvaluacionSimulacionController::class, 'store'])
+            ->middleware('throttle:3,1');
+        Route::get('/simulaciones/{simulacion}/evaluaciones/{evaluacion}', [EvaluacionSimulacionController::class, 'show']);
     });
 });
 

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getSimulation, listCaseSimulations, listHearingTypes } from '../api/simulations-api'
+import { getLatestSimulationEvaluation, getSimulation, listCaseSimulations, listHearingTypes } from '../api/simulations-api'
 
 export const simulationsQueryKey = ['simulaciones'] as const
 export const hearingTypesQueryKey = ['tipos-audiencia'] as const
@@ -21,5 +21,18 @@ export function useSimulation(id: number) {
     queryKey: [...simulationsQueryKey, id],
     queryFn: () => getSimulation(id),
     enabled: Number.isSafeInteger(id) && id > 0,
+  })
+}
+
+export function useLatestSimulationEvaluation(id: number) {
+  return useQuery({
+    queryKey: [...simulationsQueryKey, id, 'evaluacion'],
+    queryFn: () => getLatestSimulationEvaluation(id),
+    enabled: Number.isSafeInteger(id) && id > 0,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === 'pendiente' || status === 'procesando' ? 3_000 : false
+    },
+    refetchOnWindowFocus: true,
   })
 }

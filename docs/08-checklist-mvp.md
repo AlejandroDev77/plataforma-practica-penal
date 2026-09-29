@@ -55,11 +55,13 @@ El MVP está listo cuando:
 - [ ] respuestas pueden usar normativa.
 
 ## Evaluación
-- [ ] analiza transcripción;
-- [ ] usa rúbrica;
-- [ ] muestra fortalezas;
-- [ ] muestra errores;
-- [ ] muestra recomendaciones.
+- [x] API encola el análisis de una transcripción finalizada con una sola rúbrica activa compatible;
+- [x] conserva versión y criterios de la rúbrica aplicada;
+- [x] devuelve puntaje ponderado, fortalezas, errores y recomendaciones sujetos a revisión humana;
+- [x] rechaza puntajes fuera del máximo y observaciones sin evidencia literal de la defensa;
+- [x] mostrar estado y resultado en la interfaz de práctica;
+- [ ] activar una rúbrica de medidas cautelares revisada por profesionales;
+- [ ] ampliar pruebas de aceptación sintéticas y revisar la estabilidad de las observaciones.
 
 ## Interfaz
 - [ ] sala R3F;
