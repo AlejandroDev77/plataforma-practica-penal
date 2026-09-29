@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\AvanzarSimulacionRequest;
+use App\Http\Requests\Api\V1\BuscarRecuperacionExpedienteRequest;
 use App\Http\Requests\Api\V1\CrearSimulacionRequest;
 use App\Http\Requests\Api\V1\RegistrarIntervencionRequest;
 use App\Http\Resources\Api\V1\SimulacionResource;
 use App\Models\Simulacion;
+use App\Services\Recuperacion\BuscarFuentesSimulacion;
 use App\Services\Simulaciones\AvanzarEtapaAudiencia;
 use App\Services\Simulaciones\CrearSimulacion;
 use App\Services\Simulaciones\RegistrarIntervencion;
@@ -78,6 +80,36 @@ final class SimulacionController extends Controller
         return SimulacionResource::make($this->cargarDetalles($registro, $resolverTurnos))->response();
     }
 
+    public function fuentes(
+        BuscarRecuperacionExpedienteRequest $request,
+        int $simulacion,
+        BuscarFuentesSimulacion $buscarFuentes,
+    ): JsonResponse {
+        $registro = $request->user()->simulaciones()->whereKey($simulacion)->firstOrFail();
+        $datos = $request->validated();
+        $resultado = $buscarFuentes->ejecutar(
+            $registro,
+            $datos['consulta'],
+            $datos['limite'] ?? 5,
+        );
+
+        return response()->json([
+            'data' => [
+                'expediente' => $resultado['expediente']['resultados'],
+                'juridica' => $resultado['juridica']['resultados'],
+            ],
+            'meta' => [
+                'tipo_busqueda' => 'texto_completo_postgresql_espanol',
+                'estado_indice_expediente' => $resultado['expediente']['estado_indice'],
+                'fragmentos_expediente_indexados' => $resultado['expediente']['cantidad_fragmentos'],
+                'fuentes_juridicas_vigentes_indexadas' => $resultado['juridica']['cantidad_fuentes'],
+                'fragmentos_juridicos_disponibles' => $resultado['juridica']['cantidad_fragmentos'],
+                'relevancia_es_certeza' => false,
+                'aviso' => 'Las coincidencias son candidatas para consulta. La relevancia ordena texto y no confirma hechos ni interpretación jurídica.',
+            ],
+        ]);
+    }
+
     public function storeIntervencion(
         RegistrarIntervencionRequest $request,
         int $simulacion,
@@ -85,7 +117,11 @@ final class SimulacionController extends Controller
         ResolverTurnoAudiencia $resolverTurnos,
     ): JsonResponse {
         $registro = $request->user()->simulaciones()->whereKey($simulacion)->firstOrFail();
-        $actualizada = $registrar->ejecutar($registro, $request->validated('contenido'));
+        $actualizada = $registrar->ejecutar(
+            $registro,
+            $request->validated('contenido'),
+            $request->validated('source_fragment_ids', []),
+        );
 
         return SimulacionResource::make($this->cargarDetalles($actualizada, $resolverTurnos))
             ->response()
@@ -122,6 +158,7 @@ final class SimulacionController extends Controller
             'etapaActual.transicionesSalientes.destino',
             'participantes',
             'intervenciones.participante',
+            'intervenciones.fuentes',
         ]);
 
         $simulacion->loadCount(['intervenciones as intervenciones_etapa_actual_count' => fn ($query) => $query->whereColumn('intervenciones.id_etapa', 'simulaciones.id_etapa_actual')]);

@@ -18,6 +18,8 @@ final class RegistrarIntervencionRequest extends FormRequest
     {
         return [
             'contenido' => ['required', 'string', 'max:20000', 'regex:/\S/u'],
+            'source_fragment_ids' => ['sometimes', 'array', 'list', 'max:10'],
+            'source_fragment_ids.*' => ['required', 'integer', 'min:1', 'distinct'],
         ];
     }
 }

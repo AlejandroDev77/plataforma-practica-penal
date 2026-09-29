@@ -77,6 +77,25 @@ final class SimulacionResource extends JsonResource
                         'role' => $intervencion->participante->rol,
                         'display_name' => $intervencion->participante->nombre_mostrado,
                     ],
+                    'sources' => $intervencion->fuentes
+                        ->map(fn ($fuente): array => [
+                            'id' => $fuente->getKey(),
+                            'fragment_id' => $fuente->id_fragmento,
+                            'excerpt' => $fuente->fragmento_utilizado,
+                            'source' => [
+                                'kind' => $fuente->metadatos['tipo_fuente'] ?? 'desconocida',
+                                'title' => $fuente->metadatos['titulo'] ?? null,
+                                'category' => $fuente->metadatos['categoria'] ?? null,
+                                'identifier' => $fuente->metadatos['numero_norma'] ?? null,
+                                'version' => $fuente->metadatos['version'] ?? null,
+                                'page' => $fuente->metadatos['numero_pagina'] ?? null,
+                                'locator' => $fuente->metadatos['localizador'] ?? null,
+                                'valid_from' => $fuente->metadatos['fecha_vigencia'] ?? null,
+                                'valid_until' => $fuente->metadatos['fecha_fin_vigencia'] ?? null,
+                            ],
+                        ])
+                        ->values()
+                        ->all(),
                 ])
                 ->values()
                 ->all()),
