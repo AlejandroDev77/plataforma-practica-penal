@@ -100,6 +100,12 @@ final class GenerarAnalisisExpediente implements ShouldQueue
             ])->all());
             $response->throw();
 
+            $proveedor = trim((string) $response->header('X-Jurissim-Analysis-Provider', ''));
+            $modelo = trim((string) $response->header('X-Jurissim-Analysis-Model', ''));
+            if ($proveedor !== 'ollama' || $modelo === '' || mb_strlen($modelo, 'UTF-8') > 150) {
+                throw new UnexpectedValueException('El servicio local no confirmó el proveedor y modelo utilizados.');
+            }
+
             $resultado = $response->json();
             if (! is_array($resultado)) {
                 throw new UnexpectedValueException('El servicio local devolvió una respuesta inválida.');
@@ -109,7 +115,7 @@ final class GenerarAnalisisExpediente implements ShouldQueue
             $reglas->merge(['result' => $resultado]);
             $validated = Validator::make(['result' => $resultado], $reglas->rules())->validate();
 
-            $persistir->ejecutar($expediente, $validated['result'], $proceso->getKey());
+            $persistir->ejecutar($expediente, $validated['result'], $proceso->getKey(), $proveedor, $modelo);
         } catch (Throwable $exception) {
             HistorialProcesamiento::query()->whereKey($this->procesoId)->where('estado', 'procesando')->update([
                 'mensaje_error' => 'No se pudo completar esta tentativa de análisis local.',

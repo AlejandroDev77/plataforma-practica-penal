@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.api.v1.dependencies import require_service_token
 from app.core.config import Settings
@@ -14,9 +14,13 @@ router = APIRouter(prefix="/analysis", tags=["analysis"])
 async def analyze_batch(
     request: AnalysisBatchRequest,
     settings: Annotated[Settings, Depends(require_service_token)],
+    response: Response,
 ) -> StructuredCaseAnalysis:
     try:
-        return await LocalAnalysisService(settings).analyze(request)
+        result = await LocalAnalysisService(settings).analyze(request)
+        response.headers["X-Jurissim-Analysis-Provider"] = settings.llm_provider
+        response.headers["X-Jurissim-Analysis-Model"] = settings.llm_model or ""
+        return result
     except AnalysisServiceError as error:
         raise HTTPException(
             status_code=error.status_code,

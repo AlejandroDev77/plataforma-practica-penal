@@ -65,6 +65,11 @@ def test_local_provider_requires_model_and_loopback_url() -> None:
     with pytest.raises(ValidationError):
         Settings(llm_provider="openai", llm_model="some-model")
 
+    with pytest.raises(ValidationError, match="caracteres no permitidos"):
+        Settings(llm_provider="ollama", llm_model="modelo\r\nX-Injected: true")
+
+    assert Settings(llm_model="").llm_model is None
+
 
 async def test_disabled_provider_never_makes_a_request() -> None:
     service = LocalAnalysisService(Settings())

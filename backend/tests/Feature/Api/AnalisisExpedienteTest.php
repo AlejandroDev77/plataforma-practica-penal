@@ -121,7 +121,10 @@ class AnalisisExpedienteTest extends TestCase
         $resultado = $this->resultado($pagina, 'ubica a Ana')['result'];
 
         Http::fake([
-            'http://127.0.0.1:8100/api/v1/analysis/analyze' => Http::response($resultado),
+            'http://127.0.0.1:8100/api/v1/analysis/analyze' => Http::response($resultado, 200, [
+                'X-Jurissim-Analysis-Provider' => 'ollama',
+                'X-Jurissim-Analysis-Model' => 'qwen3.5:2b-q4_K_M',
+            ]),
         ]);
 
         (new GenerarAnalisisExpediente($proceso->getKey()))->handle(app(PersistirAnalisisExpediente::class));
@@ -133,8 +136,11 @@ class AnalisisExpedienteTest extends TestCase
             'id_analisis' => $procesoGuardado->id_analisis,
             'id_expediente' => $expediente->getKey(),
             'version' => 1,
+            'modelo_ia' => 'qwen3.5:2b-q4_K_M',
             'estado' => 'procesado',
         ]);
+        $this->assertSame('ollama', $procesoGuardado->metadatos['proveedor_ia']);
+        $this->assertSame('qwen3.5:2b-q4_K_M', $procesoGuardado->metadatos['modelo_ia']);
         $this->assertDatabaseCount('historial_procesamiento', 1);
         Http::assertSent(fn (ClientRequest $request): bool => $request->url() === 'http://127.0.0.1:8100/api/v1/analysis/analyze'
             && $request->hasHeader('Authorization', 'Bearer token-sintetico')

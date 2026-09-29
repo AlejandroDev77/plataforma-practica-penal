@@ -146,6 +146,10 @@ export function CaseAnalysisSection({ caseId, selectedPages, onClearSelection }:
         <span className="analysis-selection-count" aria-live="polite" role="status">
           {selectedPages.length} de 10 páginas · {selectedCharacters.toLocaleString('es-BO')} de 40.000 caracteres
         </span>
+        <div className="analysis-local-notice" role="note">
+          <ShieldCheck size={15} aria-hidden="true" />
+          <p>La solicitud usa únicamente el servicio Ollama de este equipo. Mantén desactivadas sus funciones en la nube y usa documentos sintéticos hasta acordar el tratamiento de casos reales.</p>
+        </div>
       </div>
       <div className="analysis-request-actions">
         <button className="btn btn-secondary" disabled={selectedPages.length === 0} onClick={onClearSelection}>Limpiar selección</button>

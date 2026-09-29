@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from typing import Literal
 from urllib.parse import urlsplit
@@ -34,6 +35,20 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_context_size: int = 16_384
     ollama_timeout_seconds: int = 300
+
+    @field_validator("llm_model", mode="before")
+    @classmethod
+    def validate_model_name(cls, value: str | None) -> str | None:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        if not isinstance(value, str):
+            raise ValueError("LLM_MODEL debe ser el nombre de un modelo local.")
+
+        model = value.strip()
+        if len(model) > 150 or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]*", model) is None:
+            raise ValueError("LLM_MODEL contiene caracteres no permitidos o supera 150 caracteres.")
+
+        return model
 
     @field_validator("ollama_base_url")
     @classmethod

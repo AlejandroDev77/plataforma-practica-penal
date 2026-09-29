@@ -19,9 +19,14 @@ use Illuminate\Validation\ValidationException;
 
 final class PersistirAnalisisExpediente
 {
-    public function ejecutar(Expediente $expediente, array $resultado, ?int $procesoId = null): AnalisisExpediente
-    {
-        return DB::transaction(function () use ($expediente, $resultado, $procesoId): AnalisisExpediente {
+    public function ejecutar(
+        Expediente $expediente,
+        array $resultado,
+        ?int $procesoId = null,
+        ?string $proveedorIa = null,
+        ?string $modeloIa = null,
+    ): AnalisisExpediente {
+        return DB::transaction(function () use ($expediente, $resultado, $procesoId, $proveedorIa, $modeloIa): AnalisisExpediente {
             $expediente = Expediente::query()->whereKey($expediente->getKey())->lockForUpdate()->firstOrFail();
             $paginas = $this->validarCitas($expediente, $resultado);
             $version = ((int) $expediente->analisis()->max('version')) + 1;
@@ -32,7 +37,7 @@ final class PersistirAnalisisExpediente
                 'estado' => 'procesado',
                 'version' => $version,
                 'datos_estructurados' => $resultado,
-                'modelo_ia' => null,
+                'modelo_ia' => $modeloIa,
                 'fecha_analisis' => now(),
             ]);
 
@@ -70,7 +75,12 @@ final class PersistirAnalisisExpediente
                     'id_analisis' => $analisis->getKey(),
                     'estado' => 'procesado',
                     'mensaje_error' => null,
-                    'metadatos' => [...($proceso->metadatos ?? []), ...$metadatos],
+                    'metadatos' => [
+                        ...($proceso->metadatos ?? []),
+                        ...$metadatos,
+                        ...($proveedorIa === null ? [] : ['proveedor_ia' => $proveedorIa]),
+                        ...($modeloIa === null ? [] : ['modelo_ia' => $modeloIa]),
+                    ],
                     'fecha_fin' => now(),
                 ]);
             }
