@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { getCase, getCaseAnalysis, listCases, listFilePages } from '../api/cases-api'
+import { getCase, getCaseAnalysis, getCaseAnalysisProcess, listCases, listFilePages } from '../api/cases-api'
 
 export const casesQueryKey = ['expedientes'] as const
 
@@ -34,5 +34,14 @@ export function useCaseAnalysis(caseId: number) {
     queryKey: [...casesQueryKey, caseId, 'analisis'],
     queryFn: () => getCaseAnalysis(caseId),
     enabled: Number.isSafeInteger(caseId) && caseId > 0,
+  })
+}
+
+export function useCaseAnalysisProcess(caseId: number, processId: number | null) {
+  return useQuery({
+    queryKey: [...casesQueryKey, caseId, 'analisis', 'procesos', processId],
+    queryFn: () => getCaseAnalysisProcess(caseId, processId ?? 0),
+    enabled: processId !== null && Number.isSafeInteger(caseId) && caseId > 0,
+    refetchInterval: (query) => ['pendiente', 'procesando'].includes(query.state.data?.status ?? '') ? 2000 : false,
   })
 }

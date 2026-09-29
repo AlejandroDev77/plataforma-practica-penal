@@ -19,9 +19,14 @@ use Illuminate\Validation\ValidationException;
 
 final class PersistirAnalisisExpediente
 {
-    public function ejecutar(Expediente $expediente, array $resultado): AnalisisExpediente
-    {
-        return DB::transaction(function () use ($expediente, $resultado): AnalisisExpediente {
+    public function ejecutar(
+        Expediente $expediente,
+        array $resultado,
+        ?int $procesoId = null,
+        ?string $proveedorIa = null,
+        ?string $modeloIa = null,
+    ): AnalisisExpediente {
+        return DB::transaction(function () use ($expediente, $resultado, $procesoId, $proveedorIa, $modeloIa): AnalisisExpediente {
             $expediente = Expediente::query()->whereKey($expediente->getKey())->lockForUpdate()->firstOrFail();
             $paginas = $this->validarCitas($expediente, $resultado);
             $version = ((int) $expediente->analisis()->max('version')) + 1;
@@ -32,7 +37,7 @@ final class PersistirAnalisisExpediente
                 'estado' => 'procesado',
                 'version' => $version,
                 'datos_estructurados' => $resultado,
-                'modelo_ia' => null,
+                'modelo_ia' => $modeloIa,
                 'fecha_analisis' => now(),
             ]);
 
@@ -43,20 +48,42 @@ final class PersistirAnalisisExpediente
             $this->persistirCronologia($expediente, $analisis, $resultado['chronology'], $paginas);
             $this->persistirIncidencias($expediente, $analisis, $resultado, $paginas);
 
-            $inicio = now();
-            HistorialProcesamiento::query()->create([
-                'id_expediente' => $expediente->getKey(),
-                'id_analisis' => $analisis->getKey(),
-                'tipo' => 'analisis_estructurado',
-                'estado' => 'procesado',
-                'intento' => 1,
-                'metadatos' => [
-                    'schema_version' => $resultado['schema_version'],
-                    'version_analisis' => $version,
-                ],
-                'fecha_inicio' => $inicio,
-                'fecha_fin' => now(),
-            ]);
+            $metadatos = [
+                'schema_version' => $resultado['schema_version'],
+                'version_analisis' => $version,
+            ];
+
+            if ($procesoId === null) {
+                HistorialProcesamiento::query()->create([
+                    'id_expediente' => $expediente->getKey(),
+                    'id_analisis' => $analisis->getKey(),
+                    'tipo' => 'analisis_estructurado',
+                    'estado' => 'procesado',
+                    'intento' => 1,
+                    'metadatos' => $metadatos,
+                    'fecha_inicio' => now(),
+                    'fecha_fin' => now(),
+                ]);
+            } else {
+                $proceso = HistorialProcesamiento::query()
+                    ->whereKey($procesoId)
+                    ->where('id_expediente', $expediente->getKey())
+                    ->where('tipo', 'analisis_estructurado')
+                    ->lockForUpdate()
+                    ->firstOrFail();
+                $proceso->update([
+                    'id_analisis' => $analisis->getKey(),
+                    'estado' => 'procesado',
+                    'mensaje_error' => null,
+                    'metadatos' => [
+                        ...($proceso->metadatos ?? []),
+                        ...$metadatos,
+                        ...($proveedorIa === null ? [] : ['proveedor_ia' => $proveedorIa]),
+                        ...($modeloIa === null ? [] : ['modelo_ia' => $modeloIa]),
+                    ],
+                    'fecha_fin' => now(),
+                ]);
+            }
 
             return $analisis;
         }, 3);

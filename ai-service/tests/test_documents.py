@@ -10,7 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from PIL import Image
 from pydantic import SecretStr
 
-from app.api.v1.routes import documents as documents_route
+from app.api.v1 import dependencies
 from app.core.config import Settings
 from app.main import app
 from app.modules.ingestion.service import DocumentExtractionError, DocumentExtractor
@@ -127,9 +127,9 @@ def test_invalid_configured_tesseract_path_is_reported_as_unavailable(
 ) -> None:
     monkeypatch.setattr("app.modules.ingestion.service.shutil.which", lambda _: "tesseract")
 
-    result = DocumentExtractor(
-        Settings(ocr_tesseract_path=str(tmp_path / "missing.exe"))
-    ).extract("escaneo.pdf", make_pdf(None))
+    result = DocumentExtractor(Settings(ocr_tesseract_path=str(tmp_path / "missing.exe"))).extract(
+        "escaneo.pdf", make_pdf(None)
+    )
 
     assert result.warnings[0].code == "ocr_unavailable"
 
@@ -179,7 +179,7 @@ async def test_internal_document_endpoint_requires_service_token(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        documents_route,
+        dependencies,
         "get_settings",
         lambda: Settings(service_token=SecretStr("local-internal-secret")),
     )
@@ -199,7 +199,7 @@ async def test_internal_document_endpoint_returns_page_scoped_result(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        documents_route,
+        dependencies,
         "get_settings",
         lambda: Settings(service_token=SecretStr("local-internal-secret")),
     )

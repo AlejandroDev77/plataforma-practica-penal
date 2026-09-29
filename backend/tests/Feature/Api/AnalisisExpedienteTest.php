@@ -2,10 +2,16 @@
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\GenerarAnalisisExpediente;
 use App\Models\Expediente;
+use App\Models\HistorialProcesamiento;
 use App\Models\PaginaExpediente;
 use App\Models\User;
+use App\Services\Analisis\PersistirAnalisisExpediente;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as ClientRequest;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -70,6 +76,120 @@ class AnalisisExpedienteTest extends TestCase
             ->postJson('/api/internal/v1/expedientes/'.$expediente->getKey().'/analisis', $this->resultado($pagina, 'Ana presentó denuncia'))
             ->assertCreated()
             ->assertJsonPath('data.version', 2);
+    }
+
+    public function test_owner_can_request_analysis_and_check_its_processing_status(): void
+    {
+        Queue::fake();
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $expediente = $this->createExpediente($owner, 'Caso para análisis local');
+        $pagina = $this->createPagina($expediente, 'La declaración ubica a Ana en el domicilio.');
+        Sanctum::actingAs($owner);
+
+        $response = $this->postJson('/api/v1/expedientes/'.$expediente->getKey().'/analisis', [
+            'page_ids' => [$pagina->getKey()],
+        ])->assertAccepted()->assertJsonPath('data.status', 'pendiente');
+
+        $processId = $response->json('data.process_id');
+        Queue::assertPushed(GenerarAnalisisExpediente::class, fn (GenerarAnalisisExpediente $job): bool => $job->procesoId === $processId);
+        $this->getJson('/api/v1/expedientes/'.$expediente->getKey().'/analisis/procesos/'.$processId)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'pendiente');
+
+        Sanctum::actingAs($other);
+        $this->getJson('/api/v1/expedientes/'.$expediente->getKey().'/analisis/procesos/'.$processId)->assertNotFound();
+    }
+
+    public function test_local_analysis_job_sends_only_selected_pages_and_persists_in_its_process_record(): void
+    {
+        config([
+            'services.intelligence.url' => 'http://127.0.0.1:8100',
+            'services.intelligence.token' => 'token-sintetico',
+        ]);
+        $owner = User::factory()->create();
+        $expediente = $this->createExpediente($owner, 'Caso para prueba local');
+        $text = 'La declaración ubica a Ana en el domicilio.';
+        $pagina = $this->createPagina($expediente, $text);
+        $proceso = HistorialProcesamiento::query()->create([
+            'id_expediente' => $expediente->getKey(),
+            'tipo' => 'analisis_estructurado',
+            'estado' => 'pendiente',
+            'intento' => 1,
+            'metadatos' => ['page_ids' => [$pagina->getKey()]],
+        ]);
+        $resultado = $this->resultado($pagina, 'ubica a Ana')['result'];
+
+        Http::fake([
+            'http://127.0.0.1:8100/api/v1/analysis/analyze' => Http::response($resultado, 200, [
+                'X-Jurissim-Analysis-Provider' => 'ollama',
+                'X-Jurissim-Analysis-Model' => 'qwen3.5:2b-q4_K_M',
+            ]),
+        ]);
+
+        (new GenerarAnalisisExpediente($proceso->getKey()))->handle(app(PersistirAnalisisExpediente::class));
+
+        $procesoGuardado = $proceso->fresh();
+        $this->assertSame('procesado', $procesoGuardado->estado);
+        $this->assertNotNull($procesoGuardado->id_analisis);
+        $this->assertDatabaseHas('analisis_expediente', [
+            'id_analisis' => $procesoGuardado->id_analisis,
+            'id_expediente' => $expediente->getKey(),
+            'version' => 1,
+            'modelo_ia' => 'qwen3.5:2b-q4_K_M',
+            'estado' => 'procesado',
+        ]);
+        $this->assertSame('ollama', $procesoGuardado->metadatos['proveedor_ia']);
+        $this->assertSame('qwen3.5:2b-q4_K_M', $procesoGuardado->metadatos['modelo_ia']);
+        $this->assertDatabaseCount('historial_procesamiento', 1);
+        Http::assertSent(fn (ClientRequest $request): bool => $request->url() === 'http://127.0.0.1:8100/api/v1/analysis/analyze'
+            && $request->hasHeader('Authorization', 'Bearer token-sintetico')
+            && $request->data()['pages'][0]['page_id'] === $pagina->getKey()
+            && $request->data()['pages'][0]['text'] === $text);
+        Http::assertSentCount(1);
+    }
+
+    public function test_local_analysis_job_refuses_a_non_loopback_destination(): void
+    {
+        config([
+            'services.intelligence.url' => 'https://example.com',
+            'services.intelligence.token' => 'token-sintetico',
+        ]);
+        Http::fake();
+        $owner = User::factory()->create();
+        $expediente = $this->createExpediente($owner, 'Caso privado');
+        $pagina = $this->createPagina($expediente, 'Texto exclusivamente local.');
+        $proceso = HistorialProcesamiento::query()->create([
+            'id_expediente' => $expediente->getKey(),
+            'tipo' => 'analisis_estructurado',
+            'estado' => 'pendiente',
+            'intento' => 1,
+            'metadatos' => ['page_ids' => [$pagina->getKey()]],
+        ]);
+
+        try {
+            (new GenerarAnalisisExpediente($proceso->getKey()))->handle(app(PersistirAnalisisExpediente::class));
+            $this->fail('Se rechazaba cualquier destino que no fuera loopback.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('El análisis de expedientes solo puede enviarse al servicio local.', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_analysis_request_rejects_more_than_ten_pages_before_queueing(): void
+    {
+        Queue::fake();
+        $owner = User::factory()->create();
+        $expediente = $this->createExpediente($owner, 'Caso con selección inválida');
+        Sanctum::actingAs($owner);
+
+        $this->postJson('/api/v1/expedientes/'.$expediente->getKey().'/analisis', [
+            'page_ids' => range(1, 11),
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseCount('historial_procesamiento', 0);
+        Queue::assertNothingPushed();
     }
 
     public function test_internal_persistence_rejects_citations_from_another_case_and_unmatched_excerpts_atomically(): void

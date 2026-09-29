@@ -1,5 +1,23 @@
 export type AnalysisCertainty = 'textual' | 'inferido' | 'incierto'
 export type AnalysisReviewDecision = 'aprobado' | 'requiere_cambios'
+export type AnalysisProcessStatus = 'pendiente' | 'procesando' | 'procesado' | 'error'
+
+export interface AnalysisProcess {
+  process_id: number
+  status: AnalysisProcessStatus
+  message: string | null
+  analysis_id: number | null
+  started_at: string | null
+  finished_at: string | null
+}
+
+export interface SelectedAnalysisPage {
+  id: number
+  fileId: number
+  fileName: string
+  locator: string
+  characters: number
+}
 
 export interface AnalysisCitation {
   file_name: string | null
