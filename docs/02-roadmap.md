@@ -4,7 +4,7 @@
 
 La base, autenticación, expedientes y extracción están integrados mediante los PR #1–#4; el análisis versionado, la revisión humana y sus actualizaciones, incluida la configuración persistente de OCR, mediante los PR #5–#8; el motor de transiciones, la API autenticada de simulaciones y los turnos configurables mediante los PR #9–#11. Los checks requeridos pasaron antes de cada merge. `main` no se ha modificado.
 
-El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis, la API base de simulaciones y el control de turnos de texto por rol ya están integrados. La recuperación textual del expediente está en desarrollo local en `funcionalidad/rag-expediente`; aún no está integrada y no llama a un LLM. La recuperación jurídica permanece pendiente. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
+El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis, la API base de simulaciones y el control de turnos de texto por rol ya están integrados. La recuperación textual del expediente y la consulta jurídica separada están implementadas localmente en `funcionalidad/rag-expediente`; aún no están integradas en `develop` y no llaman a un LLM. La carga del corpus oficial sigue pendiente de curación y revisión competente. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
 
 ## Fase 0 — Base
 - crear repositorio;
