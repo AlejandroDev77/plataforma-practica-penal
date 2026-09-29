@@ -4,7 +4,7 @@
 
 La base, autenticación, expedientes y extracción están integrados mediante los PR #1–#4; el análisis versionado, la revisión humana y sus actualizaciones, incluida la configuración persistente de OCR, mediante los PR #5–#8; el motor de transiciones, la API autenticada de simulaciones y los turnos configurables mediante los PR #9–#11. Los checks requeridos pasaron antes de cada merge. `main` no se ha modificado.
 
-El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis, la API base de simulaciones y el control de turnos de texto por rol ya están integrados; todavía no se habilitan RAG ni llamadas a LLM. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
+El trabajo sigue una fase por rama, desde `develop`, y se integra solo por PR tras pasar los checks. El contrato y la revisión humana del análisis, la API base de simulaciones y el control de turnos de texto por rol están integrados. La ejecución local del análisis con Ollama está implementada en la rama `funcionalidad/analisis-local-ollama`, pero aún no está publicada ni integrada en `develop`; RAG también permanece en una rama local separada. No se envían expedientes a proveedores externos. No ejecutar pruebas destructivas contra la base PostgreSQL habitual.
 
 ## Fase 0 — Base
 - crear repositorio;
@@ -80,10 +80,10 @@ Resultado de la fase: texto recuperado asociado al archivo y a páginas/localiza
 - [x] exigir citas textuales vinculadas a páginas del lote autorizado;
 - [x] limitar páginas y caracteres procesados por lote;
 - [x] persistir resultados por versión, volver a verificar las citas y ofrecer revisión humana del propietario;
-- [ ] decidir proveedor/modelo inicial y política para enviar texto jurídico;
-- [ ] ejecutar análisis por cola.
+- [x] elegir Ollama local para pruebas y mantener el texto jurídico en el equipo;
+- [x] ejecutar el análisis por cola y persistir el resultado trazable.
 
-Estado: el esquema Pydantic, la persistencia interna versionada, las citas tipadas, el historial de revisión y la interfaz del expediente están integrados en `develop` mediante PR #7. La migración aditiva se aplicó en desarrollo y `jurissim_pruebas` se creó como base aislada. La suite Laravel pasó con 56 pruebas y 357 aserciones; también pasaron las pruebas Python y las verificaciones previas de frontend. La base habitual `jurissim` no se usó para pruebas destructivas. No hay llamadas a LLM ni generación de contenido real: la decisión de proveedor/modelo y la política de transferencia de texto jurídico siguen pendientes por sus implicaciones de privacidad, coste y configuración.
+Estado: el esquema Pydantic, la persistencia interna versionada, las citas tipadas, el historial de revisión y la interfaz de revisión humana están integrados en `develop` mediante PR #7. La ejecución local con Ollama, la cola y la actualización de interfaz están implementadas en `funcionalidad/analisis-local-ollama`; se validaron con 60 pruebas Laravel (374 aserciones), 25 pruebas Python y compilación/lint de frontend. En este equipo está instalado `qwen3.5:2b-q4_K_M`. El proveedor queda desactivado de forma predeterminada y, al habilitarlo, el servicio solo acepta Ollama en loopback; no se envía texto a servicios externos. La base habitual `jurissim` no se usó para pruebas destructivas. La rama sigue pendiente de publicación e integración mediante PR.
 
 ---
 
