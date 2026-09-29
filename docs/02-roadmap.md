@@ -101,12 +101,13 @@ la IA recupera solo fragmentos relevantes con referencias.
 - [x] configurar turnos por etapa, validar el rol del usuario al registrar intervenciones de texto y no avanzar mientras queden turnos configurados;
 - [ ] definir actos procesales específicos permitidos por rol, sujetos a revisión jurídica;
 - [x] conservar referencias verificadas de fuentes en intervenciones (PR #13);
+- [x] permitir conservar propuestas de secuencia como borradores aislados; no implican aprobación ni activación;
 - [x] exponer creación, consulta, registro de intervenciones y avance mediante API autenticada y limitada al propietario.
 
 MVP:
 medidas cautelares.
 
-Estado: los PR #9–#11 integraron el avance por transiciones activas, la API limitada al propietario y el registro de intervenciones de texto bajo turnos configurables por rol. El PR #13 agregó el registro de referencias verificadas por intervención. No se precargaron turnos jurídicos: requieren revisión del equipo competente. Aún no hay agentes ni memoria conversacional automática; el siguiente trabajo jurídico depende de definir y revisar esas reglas.
+Estado: los PR #9–#11 integraron el avance por transiciones activas, la API limitada al propietario y el registro de intervenciones de texto bajo turnos configurables por rol. El PR #13 agregó el registro de referencias verificadas por intervención. La consola administrativa puede preparar propuestas aisladas que siempre permanecen en estado borrador; el rol técnico que permite prepararlas no confiere competencia jurídica ni existe una acción de aprobación o activación. No se precargaron turnos jurídicos: requieren revisión del equipo competente. Aún no hay agentes ni memoria conversacional automática; el siguiente trabajo jurídico depende de definir y revisar esas reglas y acordar quién y cómo podría promoverlas al catálogo activo.
 
 ---
 

@@ -41,6 +41,8 @@ La tabla `turnos_etapa_audiencia` define una secuencia finita por etapa; cada fi
 
 No se han cargado secuencias jurídicas iniciales a propósito. Antes de configurar una audiencia, un equipo jurídico debe definir y revisar el orden y los roles para el caso de uso aplicable. Turnos que correspondan a agentes aún no implementados no deben activarse: la fase de generación deberá registrar esos turnos desde el servidor.
 
+La consola administrativa puede conservar propuestas de turnos en `propuestas_turnos_audiencia`, separadas de `turnos_etapa_audiencia`. Solo `administrador_plataforma` puede consultarlas o prepararlas; este permiso es técnico y no representa competencia jurídica. El endpoint fija el estado en `borrador`, ignora campos de estado/autor enviados por el cliente y no ofrece una operación de aprobación ni activación. Estas propuestas no se incluyen en instantáneas ni alteran simulaciones. No se precarga contenido jurídico. Definir quién revisará y aprobará reglas, y cómo una regla aprobada llegará al catálogo activo, queda pendiente de decisión y revisión profesional.
+
 ## Estado MVP
 
 ```text
