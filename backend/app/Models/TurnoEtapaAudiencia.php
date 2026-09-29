@@ -15,6 +15,7 @@ class TurnoEtapaAudiencia extends ModeloDominio
         'id_etapa',
         'orden',
         'rol',
+        'instruccion',
         'activo',
     ];
 

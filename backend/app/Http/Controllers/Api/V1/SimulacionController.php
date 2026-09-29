@@ -12,9 +12,12 @@ use App\Models\Simulacion;
 use App\Services\Recuperacion\BuscarFuentesSimulacion;
 use App\Services\Simulaciones\AvanzarEtapaAudiencia;
 use App\Services\Simulaciones\CrearSimulacion;
+use App\Services\Simulaciones\ProponerIntervencionAgente;
 use App\Services\Simulaciones\RegistrarIntervencion;
 use App\Services\Simulaciones\ResolverTurnoAudiencia;
 use DomainException;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -126,6 +129,34 @@ final class SimulacionController extends Controller
         return SimulacionResource::make($this->cargarDetalles($actualizada, $resolverTurnos))
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function proponerIntervencion(
+        Request $request,
+        int $simulacion,
+        ProponerIntervencionAgente $proponer,
+    ): JsonResponse {
+        $registro = $request->user()->simulaciones()->whereKey($simulacion)->firstOrFail();
+
+        try {
+            return response()->json(['data' => $proponer->ejecutar($registro)]);
+        } catch (ConnectionException) {
+            return response()->json([
+                'message' => 'El servicio de generación local no está disponible.',
+            ], 503);
+        } catch (RequestException $exception) {
+            $codigo = in_array($exception->response?->status(), [503, 504], true)
+                ? $exception->response->status()
+                : 502;
+
+            return response()->json([
+                'message' => 'El servicio local no pudo producir una propuesta válida.',
+            ], $codigo);
+        } catch (\RuntimeException) {
+            return response()->json([
+                'message' => 'El servicio local devolvió una respuesta fuera del contrato esperado.',
+            ], 502);
+        }
     }
 
     public function avanzar(

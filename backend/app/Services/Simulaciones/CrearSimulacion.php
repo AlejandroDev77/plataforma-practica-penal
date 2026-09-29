@@ -50,6 +50,7 @@ final class CrearSimulacion
                 ]);
             }
 
+            $turnosPorEtapa = $this->turnos->capturarConfiguracion($tipoAudiencia->getKey());
             $simulacion = $usuario->simulaciones()->create([
                 'id_expediente' => $caso->getKey(),
                 'id_analisis' => $analisis->getKey(),
@@ -57,7 +58,7 @@ final class CrearSimulacion
                 'rol_usuario' => 'abogado_defensor',
                 'estado' => 'preparando',
                 'configuracion' => [
-                    'turnos_por_etapa' => $this->turnos->capturarConfiguracion($tipoAudiencia->getKey()),
+                    'turnos_por_etapa' => $turnosPorEtapa,
                 ],
             ]);
 
@@ -70,6 +71,24 @@ final class CrearSimulacion
                 'controlado_por' => 'usuario',
                 'estado' => 'activo',
             ]);
+
+            $rolesAgente = collect($turnosPorEtapa)
+                ->flatten(1)
+                ->pluck('rol')
+                ->filter(fn (string $rol): bool => in_array($rol, ['juez', 'fiscal'], true))
+                ->unique();
+
+            foreach ($rolesAgente as $rol) {
+                ParticipanteSimulacion::query()->create([
+                    'id_simulacion' => $simulacion->getKey(),
+                    'id_analisis' => $analisis->getKey(),
+                    'id_expediente' => $caso->getKey(),
+                    'rol' => $rol,
+                    'nombre_mostrado' => $rol === 'juez' ? 'Juez simulado' : 'Fiscal simulado',
+                    'controlado_por' => 'ia',
+                    'estado' => 'activo',
+                ]);
+            }
 
             try {
                 $simulacion = $this->avanzarEtapa->ejecutar($simulacion);

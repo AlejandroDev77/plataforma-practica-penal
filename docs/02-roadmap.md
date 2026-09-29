@@ -113,7 +113,7 @@ Estado: los PR #9–#11 integraron el avance por transiciones activas, la API li
 
 ## Fase 7 — Simulación por texto
 
-Estado: el servicio interno de FastAPI ya puede proponer una intervención breve para juez/fiscal mediante Ollama local, con contrato estricto y contexto acotado (PR pendiente). Se probó directamente con Qwen local y un caso sintético; no valida calidad jurídica. Ollama sigue desactivado por defecto. Esta capacidad todavía no está conectada al orquestador Laravel ni a una interfaz de chat, no registra intervenciones y no avanza la audiencia. No se generan respuestas cuando Laravel no provee un turno; no se han cargado reglas jurídicas activas ni se han activado propuestas de turnos.
+Estado: el servicio interno de FastAPI puede proponer una intervención breve de juez/fiscal mediante Ollama local, con contrato estricto y contexto acotado (PR #19, integrado en `develop`). La ruta autenticada de Laravel prepara y devuelve borradores únicamente cuando el turno actual del servidor asigna juez/fiscal, conserva una instrucción no vacía, tiene participante IA activo y el análisis conserva su aprobación humana vigente. Obtiene hechos, citas y transcripción desde recursos autorizados del servidor; ignora cualquier contexto paralelo enviado por el cliente. La propuesta exige revisión humana y no se persiste como intervención ni avanza la audiencia. No se han cargado reglas jurídicas activas ni se han activado propuestas de turnos; la instrucción queda vacía por defecto. Se probó directamente con Qwen local y datos sintéticos; eso no valida calidad jurídica. Ollama continúa desactivado por defecto.
 
 Usuario:
 - abogado defensor.

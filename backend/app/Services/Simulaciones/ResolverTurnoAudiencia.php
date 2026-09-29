@@ -8,7 +8,7 @@ use DomainException;
 
 final class ResolverTurnoAudiencia
 {
-    /** @return array<int, array{orden: int, rol: string}> */
+    /** @return array<int, array{orden: int, rol: string, instruccion?: string|null}> */
     public function turnosConfigurados(Simulacion $simulacion, int $idEtapa): array
     {
         $configuracion = $simulacion->configuracion ?? [];
@@ -70,7 +70,7 @@ final class ResolverTurnoAudiencia
         }
     }
 
-    /** @return array<string, array<int, array{orden: int, rol: string}>> */
+    /** @return array<string, array<int, array{orden: int, rol: string, instruccion: string|null}>> */
     public function capturarConfiguracion(int $idTipoAudiencia): array
     {
         return TurnoEtapaAudiencia::query()
@@ -79,11 +79,12 @@ final class ResolverTurnoAudiencia
             ->whereHas('etapa', fn ($query) => $query->where('activo', true))
             ->orderBy('id_etapa')
             ->orderBy('orden')
-            ->get(['id_etapa', 'orden', 'rol'])
+            ->get(['id_etapa', 'orden', 'rol', 'instruccion'])
             ->groupBy('id_etapa')
             ->map(fn ($turnos): array => $turnos->map(fn (TurnoEtapaAudiencia $turno): array => [
                 'orden' => $turno->orden,
                 'rol' => $turno->rol,
+                'instruccion' => $turno->instruccion,
             ])->values()->all())
             ->all();
     }
