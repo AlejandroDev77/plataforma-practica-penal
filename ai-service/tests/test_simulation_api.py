@@ -88,7 +88,7 @@ async def test_internal_simulation_endpoint_returns_proposal_and_local_metadata(
                 requires_human_review=True,
             )
 
-    monkeypatch.setattr(simulations_route, "LocalSimulationService", StubSimulationService)
+    monkeypatch.setattr(simulations_route, "SimulationService", StubSimulationService)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/api/v1/simulations/proposals",
@@ -122,3 +122,94 @@ async def test_internal_simulation_endpoint_rejects_client_supplied_system_field
         )
 
     assert response.status_code == 422
+
+
+async def test_provider_metadata_requires_service_token_and_never_exposes_secrets(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        dependencies,
+        "get_settings",
+        lambda: Settings(
+            _env_file=None,
+            service_token=SecretStr("local-internal-secret"),
+            simulation_provider="openai",
+            openai_api_key=SecretStr("clave-privada-ficticia"),
+        ),
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        unauthorized = await client.get("/api/v1/simulations/provider")
+        result = await client.get(
+            "/api/v1/simulations/provider",
+            headers={"Authorization": "Bearer local-internal-secret"},
+        )
+    assert unauthorized.status_code == 401
+    assert result.status_code == 200
+    assert result.json() == {
+        "data": {
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "requires_external_authorization": True,
+        }
+    }
+    assert "clave-privada" not in result.text
+    assert "local-internal-secret" not in result.text
+
+
+async def test_openai_generation_is_blocked_at_the_endpoint_without_separate_authorization(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        dependencies,
+        "get_settings",
+        lambda: Settings(
+            _env_file=None,
+            service_token=SecretStr("local-internal-secret"),
+            simulation_provider="openai",
+        ),
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/simulations/proposals",
+            headers={"Authorization": "Bearer local-internal-secret"},
+            json=sample_request(),
+        )
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "external_processing_not_authorized"
+
+
+async def test_openai_metadata_matches_the_selected_provider_and_explicit_authorization(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        dependencies,
+        "get_settings",
+        lambda: Settings(
+            _env_file=None,
+            service_token=SecretStr("local-internal-secret"),
+            simulation_provider="openai",
+        ),
+    )
+
+    class StubSimulationService:
+        def __init__(self, settings: Settings) -> None:
+            assert settings.simulation_generation_provider == "openai"
+
+        async def propose(self, request: SimulationProposalRequest) -> SimulationProposal:
+            assert request.allow_external_processing is True
+            return SimulationProposal(
+                speaker_role="fiscal",
+                content="¿Puede precisar la fuente?",
+                requires_human_review=True,
+            )
+
+    monkeypatch.setattr(simulations_route, "SimulationService", StubSimulationService)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/simulations/proposals",
+            headers={"Authorization": "Bearer local-internal-secret"},
+            json={**sample_request(), "allow_external_processing": True},
+        )
+    assert response.status_code == 200
+    assert response.headers["X-Jurissim-Simulation-Provider"] == "openai"
+    assert response.headers["X-Jurissim-Simulation-Model"] == "gpt-4o-mini"

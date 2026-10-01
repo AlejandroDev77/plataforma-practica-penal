@@ -27,7 +27,7 @@ class LocalSimulationService:
         self.transport = transport
 
     async def propose(self, request: SimulationProposalRequest) -> SimulationProposal:
-        if self.settings.llm_provider != "ollama" or not self.settings.llm_model:
+        if self.settings.simulation_generation_provider != "ollama" or not self.settings.llm_model:
             raise SimulationServiceError(
                 "local_model_not_configured",
                 "La generación local está desactivada o no tiene un modelo configurado.",
@@ -81,22 +81,7 @@ class LocalSimulationService:
                 502,
             ) from error
 
-        if result.speaker_role != request.actor_role:
-            raise SimulationServiceError(
-                "local_model_role_mismatch",
-                "La respuesta local no respetó el rol asignado al turno.",
-                502,
-            )
-
-        allowed_source_ids = {source.id for source in request.sources}
-        if not set(result.used_source_ids).issubset(allowed_source_ids):
-            raise SimulationServiceError(
-                "local_model_unverifiable_sources",
-                "La propuesta local incluyó referencias que no fueron entregadas al modelo.",
-                502,
-            )
-
-        return result
+        return validate_proposal(result, request, "local_model")
 
     @staticmethod
     def _system_prompt() -> str:
@@ -137,3 +122,36 @@ class LocalSimulationService:
             },
         )
         return json.dumps(context, ensure_ascii=False)
+
+
+def validate_proposal(
+    result: SimulationProposal, request: SimulationProposalRequest, provider: str
+) -> SimulationProposal:
+    if result.speaker_role != request.actor_role:
+        raise SimulationServiceError(
+            f"{provider}_role_mismatch", "La respuesta no respetó el rol asignado al turno.", 502
+        )
+    if not set(result.used_source_ids).issubset({source.id for source in request.sources}):
+        raise SimulationServiceError(
+            f"{provider}_unverifiable_sources",
+            "La propuesta incluyó referencias que no fueron entregadas al modelo.",
+            502,
+        )
+    return result
+
+
+class SimulationService:
+    """El proveedor es configuración del servidor; no hay conmutación ni reintentos automáticos."""
+
+    def __init__(
+        self, settings: Settings, transport: httpx.AsyncBaseTransport | None = None
+    ) -> None:
+        self.settings = settings
+        self.transport = transport
+
+    async def propose(self, request: SimulationProposalRequest) -> SimulationProposal:
+        if self.settings.simulation_generation_provider == "openai":
+            from app.modules.simulation.openai_service import OpenAISimulationService
+
+            return await OpenAISimulationService(self.settings, self.transport).propose(request)
+        return await LocalSimulationService(self.settings, self.transport).propose(request)

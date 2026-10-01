@@ -2,13 +2,16 @@
 
 namespace Tests\Feature\Api;
 
+use App\Integrations\Intelligence\FastApiSimulationAgentGateway;
 use App\Models\EtapaAudiencia;
 use App\Models\PaginaExpediente;
 use App\Models\ParticipanteSimulacion;
 use App\Models\RevisionAnalisis;
 use App\Models\Simulacion;
+use App\Models\User;
 use App\Modules\Simulations\Application\Contracts\SimulationAgentGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
 use Tests\TestCase;
@@ -34,6 +37,7 @@ class PropuestaIntervencionAgenteTest extends TestCase
             ->once()
             ->withArgs(function (array $context) use ($juez): bool {
                 $this->assertSame('juez', $context['actor_role']);
+                $this->assertFalse($context['allow_external_processing']);
                 $this->assertSame((string) $juez->getKey(), $context['actor_id']);
                 $this->assertSame('Consulte a la defensa sobre la solicitud.', $context['turn_instruction']);
                 $this->assertSame('La testigo Ana declaró que estuvo presente.', $context['visible_facts'][0]['text']);
@@ -104,6 +108,96 @@ class PropuestaIntervencionAgenteTest extends TestCase
             ->assertStatus(502);
 
         $this->assertDatabaseCount('intervenciones', 1);
+    }
+
+    public function test_separate_external_authorization_is_forwarded_without_trusting_other_client_context(): void
+    {
+        [$simulacion] = $this->prepararTurnoDeJuez();
+        $gateway = Mockery::mock(SimulationAgentGateway::class);
+        $gateway->shouldReceive('proposeAction')->once()->withArgs(function (array $context): bool {
+            return $context['allow_external_processing'] === true && $context['actor_role'] === 'juez';
+        })->andReturn([
+            'speaker_role' => 'juez', 'content' => '¿Puede precisar la fuente?',
+            'used_source_ids' => [1], 'requires_human_review' => true,
+            '_meta' => ['provider' => 'openai', 'model' => 'gpt-4o-mini'],
+        ]);
+        $this->app->instance(SimulationAgentGateway::class, $gateway);
+        Sanctum::actingAs($simulacion->usuario);
+        $this->postJson('/api/v1/simulaciones/'.$simulacion->getKey().'/propuesta-intervencion', [
+            'allow_external_processing' => true, 'actor_role' => 'fiscal',
+        ])->assertOk()->assertJsonPath('data.meta.provider', 'openai');
+        $this->assertDatabaseCount('intervenciones', 1);
+    }
+
+    public function test_external_consent_error_is_returned_without_disclosing_internal_details(): void
+    {
+        [$simulacion] = $this->prepararTurnoDeJuez();
+        $this->app->instance(SimulationAgentGateway::class, new FastApiSimulationAgentGateway);
+        Http::preventStrayRequests();
+        Http::fake(['*/api/v1/simulations/proposals' => Http::response([
+            'detail' => ['code' => 'external_processing_not_authorized', 'message' => 'Contenido privado que no debe mostrarse'],
+        ], 422)]);
+        Sanctum::actingAs($simulacion->usuario);
+        $this->postJson('/api/v1/simulaciones/'.$simulacion->getKey().'/propuesta-intervencion')
+            ->assertUnprocessable()->assertJsonValidationErrors('allow_external_processing')
+            ->assertDontSee('Contenido privado');
+        Http::assertSent(fn ($request) => $request['allow_external_processing'] === false);
+        $this->assertDatabaseCount('intervenciones', 1);
+    }
+
+    public function test_provider_rate_limit_is_preserved_without_exposing_response_body(): void
+    {
+        [$simulacion] = $this->prepararTurnoDeJuez();
+        $this->app->instance(SimulationAgentGateway::class, new FastApiSimulationAgentGateway);
+        Http::preventStrayRequests();
+        Http::fake(['*/api/v1/simulations/proposals' => Http::response(['detail' => 'Clave privada y texto'], 429)]);
+        Sanctum::actingAs($simulacion->usuario);
+        $this->postJson('/api/v1/simulaciones/'.$simulacion->getKey().'/propuesta-intervencion', ['allow_external_processing' => true])
+            ->assertStatus(429)->assertDontSee('Clave privada');
+        $this->assertDatabaseCount('intervenciones', 1);
+    }
+
+    public function test_provider_metadata_is_scoped_to_the_owner_and_validates_the_internal_contract(): void
+    {
+        [$simulacion] = $this->prepararTurnoDeJuez();
+        $this->app->instance(SimulationAgentGateway::class, new FastApiSimulationAgentGateway);
+        Http::preventStrayRequests();
+        Http::fake(['*/api/v1/simulations/provider' => Http::response(['data' => [
+            'provider' => 'openai', 'model' => 'gpt-4o-mini', 'requires_external_authorization' => true,
+            'api_key' => 'no-debe-salir',
+        ]])]);
+        Sanctum::actingAs($simulacion->usuario);
+        $this->getJson('/api/v1/simulaciones/'.$simulacion->getKey().'/proveedor-generacion')
+            ->assertOk()->assertExactJson(['data' => [
+                'provider' => 'openai', 'model' => 'gpt-4o-mini', 'requires_external_authorization' => true,
+            ]]);
+        Http::assertSentCount(1);
+        Sanctum::actingAs(User::factory()->create());
+        $this->getJson('/api/v1/simulaciones/'.$simulacion->getKey().'/proveedor-generacion')->assertNotFound();
+        Http::assertSentCount(1);
+    }
+
+    public function test_misleading_provider_metadata_blocks_generation_discovery(): void
+    {
+        [$simulacion] = $this->prepararTurnoDeJuez();
+        $this->app->instance(SimulationAgentGateway::class, new FastApiSimulationAgentGateway);
+        Http::preventStrayRequests();
+        Http::fake(['*/api/v1/simulations/provider' => Http::response(['data' => [
+            'provider' => 'openai', 'model' => 'gpt-4o-mini', 'requires_external_authorization' => false,
+        ]])]);
+        Sanctum::actingAs($simulacion->usuario);
+        $this->getJson('/api/v1/simulaciones/'.$simulacion->getKey().'/proveedor-generacion')->assertStatus(503);
+    }
+
+    public function test_invalid_authorization_is_rejected_before_contacting_the_service(): void
+    {
+        [$simulacion] = $this->prepararTurnoDeJuez();
+        Http::preventStrayRequests();
+        Http::fake();
+        Sanctum::actingAs($simulacion->usuario);
+        $this->postJson('/api/v1/simulaciones/'.$simulacion->getKey().'/propuesta-intervencion', ['allow_external_processing' => 'permiso'])
+            ->assertUnprocessable()->assertJsonValidationErrors('allow_external_processing');
+        Http::assertNothingSent();
     }
 
     /** @return array{0: Simulacion, 1: PaginaExpediente, 2: ParticipanteSimulacion} */

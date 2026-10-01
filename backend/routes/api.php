@@ -83,6 +83,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/simulaciones/{simulacion}/fuentes', [SimulacionController::class, 'fuentes']);
         Route::post('/simulaciones/{simulacion}/propuesta-intervencion', [SimulacionController::class, 'proponerIntervencion'])
             ->middleware('throttle:5,1');
+        Route::get('/simulaciones/{simulacion}/proveedor-generacion', [SimulacionController::class, 'proveedorGeneracion']);
         Route::post('/simulaciones/{simulacion}/intervenciones', [SimulacionController::class, 'storeIntervencion']);
         Route::post('/simulaciones/{simulacion}/avanzar', [SimulacionController::class, 'avanzar']);
         Route::post('/simulaciones/{simulacion}/evaluacion', [EvaluacionSimulacionController::class, 'store'])

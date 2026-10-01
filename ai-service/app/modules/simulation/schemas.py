@@ -50,6 +50,7 @@ class SimulationProposalRequest(StrictModel):
     visible_facts: list[VisibleFact] = Field(default_factory=list, max_length=20)
     sources: list[SourceExcerpt] = Field(default_factory=list, max_length=8)
     transcript: list[TranscriptMessage] = Field(default_factory=list, max_length=12)
+    allow_external_processing: bool = Field(default=False, strict=True)
 
     @model_validator(mode="after")
     def validate_context(self) -> SimulationProposalRequest:

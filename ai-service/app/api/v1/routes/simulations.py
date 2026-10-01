@@ -8,9 +8,23 @@ from app.modules.simulation.schemas import (
     SimulationProposalEnvelope,
     SimulationProposalRequest,
 )
-from app.modules.simulation.service import LocalSimulationService, SimulationServiceError
+from app.modules.simulation.service import SimulationService, SimulationServiceError
 
 router = APIRouter(prefix="/simulations", tags=["simulations"])
+
+
+@router.get("/provider")
+async def generation_provider(
+    settings: Annotated[Settings, Depends(require_service_token)],
+) -> dict[str, object]:
+    provider = settings.simulation_generation_provider
+    return {
+        "data": {
+            "provider": provider,
+            "model": settings.simulation_generation_model if provider != "disabled" else None,
+            "requires_external_authorization": provider == "openai",
+        }
+    }
 
 
 @router.post("/proposals", response_model=SimulationProposalEnvelope)
@@ -20,9 +34,9 @@ async def propose_action(
     response: Response,
 ) -> SimulationProposalEnvelope:
     try:
-        proposal = await LocalSimulationService(settings).propose(payload)
-        response.headers["X-Jurissim-Simulation-Provider"] = settings.llm_provider
-        response.headers["X-Jurissim-Simulation-Model"] = settings.llm_model or ""
+        proposal = await SimulationService(settings).propose(payload)
+        response.headers["X-Jurissim-Simulation-Provider"] = settings.simulation_generation_provider
+        response.headers["X-Jurissim-Simulation-Model"] = settings.simulation_generation_model or ""
         return SimulationProposalEnvelope(data=proposal)
     except SimulationServiceError as error:
         raise HTTPException(
