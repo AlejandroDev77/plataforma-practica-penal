@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\ExpedienteController;
 use App\Http\Controllers\Api\V1\GobiernoReglasAudienciaController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
+use App\Http\Controllers\Api\V1\OrquestacionAudienciaController;
 use App\Http\Controllers\Api\V1\PasswordResetLinkController;
 use App\Http\Controllers\Api\V1\PropuestaTurnoAudienciaController;
 use App\Http\Controllers\Api\V1\RecuperacionExpedienteController;
@@ -79,6 +80,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'index']);
         Route::post('/expedientes/{expediente}/simulaciones', [SimulacionController::class, 'store']);
         Route::get('/simulaciones/{simulacion}', [SimulacionController::class, 'show']);
+        Route::get('/simulaciones/{simulacion}/orquestacion', OrquestacionAudienciaController::class);
         Route::get('/simulaciones/{simulacion}/evaluacion', [EvaluacionSimulacionController::class, 'latest']);
         Route::post('/simulaciones/{simulacion}/fuentes', [SimulacionController::class, 'fuentes']);
         Route::post('/simulaciones/{simulacion}/propuesta-intervencion', [SimulacionController::class, 'proponerIntervencion'])
