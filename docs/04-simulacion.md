@@ -5,6 +5,10 @@ Estado: el motor de audiencia y sus turnos configurables están integrados media
 ## Objetivo
 Controlar la audiencia; el LLM NO controla el flujo completo.
 
+## Versiones para revisión de reglas
+
+El [sellado de versiones](14-versiones-reglas-audiencia.md) conserva tipo, etapas, transiciones, propuestas y turnos de referencia en una instantánea inmutable, con numeración por audiencia, autor, fecha y huella calculada por PostgreSQL. No aprueba, activa ni ejecuta reglas; el criterio adoptado exige revisión por una persona habilitada, independiente de la autoría. La habilitación y las decisiones jurídicas siguen pendientes de implementación.
+
 ## Componentes
 
 ```text
