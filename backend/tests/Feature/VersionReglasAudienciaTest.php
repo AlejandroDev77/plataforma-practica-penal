@@ -263,7 +263,7 @@ class VersionReglasAudienciaTest extends TestCase
         $version = $this->sellar($autor, $tipo);
         $this->rechazoSql(fn () => DB::table('versiones_reglas_audiencia')->where('id_version_reglas', $version->getKey())->update(['motivo' => 'Alteracion']));
         $this->rechazoSql(fn () => DB::table('versiones_reglas_audiencia')->delete());
-        $this->rechazoSql(fn () => DB::statement('TRUNCATE TABLE versiones_reglas_audiencia'));
+        $this->rechazoSql(fn () => DB::statement('TRUNCATE TABLE versiones_reglas_audiencia CASCADE'));
         $this->assertDatabaseCount('versiones_reglas_audiencia', 1);
     }
 
@@ -298,10 +298,13 @@ class VersionReglasAudienciaTest extends TestCase
 
     public function test_la_migracion_vacia_puede_revertirse_y_reinstalarse(): void
     {
+        $revision = require database_path('migrations/2026_10_01_000002_registrar_revision_juridica_reglas.php');
+        $revision->down();
         $migracion = require database_path('migrations/2026_10_01_000001_crear_versiones_reglas_audiencia.php');
         $migracion->down();
         $this->assertFalse(Schema::hasTable('versiones_reglas_audiencia'));
         $migracion->up();
+        $revision->up();
         $this->assertTrue(Schema::hasTable('versiones_reglas_audiencia'));
     }
 

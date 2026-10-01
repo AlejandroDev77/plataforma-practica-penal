@@ -7,7 +7,9 @@ Controlar la audiencia; el LLM NO controla el flujo completo.
 
 ## Versiones para revisión de reglas
 
-El [sellado de versiones](14-versiones-reglas-audiencia.md) conserva tipo, etapas, transiciones, propuestas y turnos de referencia en una instantánea inmutable, con numeración por audiencia, autor, fecha y huella calculada por PostgreSQL. No aprueba, activa ni ejecuta reglas; el criterio adoptado exige revisión por una persona habilitada, independiente de la autoría. La habilitación y las decisiones jurídicas siguen pendientes de implementación.
+El [sellado de versiones](14-versiones-reglas-audiencia.md) conserva tipo, etapas, transiciones, propuestas y turnos de referencia en una instantánea inmutable, con numeración por audiencia, autor, fecha y huella calculada por PostgreSQL. No aprueba, activa ni ejecuta reglas; el criterio adoptado exige revisión por una persona habilitada, independiente de la autoría.
+
+La [capa interna de revisión jurídica](15-revision-juridica-reglas.md) registra habilitaciones acotadas, decisiones sobre versiones exactas y revocaciones inmutables. No asigna roles, no contiene habilitaciones reales y no habilita la ejecución del orquestador. La interfaz, los endpoints administrativos y la activación siguen siendo hitos separados.
 
 ## Componentes
 

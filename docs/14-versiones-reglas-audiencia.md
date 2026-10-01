@@ -12,7 +12,7 @@ Por delegación del usuario se adopta esta separación para el próximo flujo:
 - La decisión deberá identificar versión, huella, alcance, fuentes consultadas, vigencia comprobada, observaciones, responsable y fecha. Requerirá una operación humana explícita; no se deducirá de un flag JSON, un turno activo o la aprobación de un análisis.
 - Revocar o cambiar el contenido no debe sobrescribir una decisión ni una versión histórica. La activación será una operación posterior y separada; las simulaciones existentes no se actualizarán silenciosamente.
 
-La habilitación, las decisiones, la revocación y la activación quedan pendientes de implementación. No se atribuye ninguna revisión profesional a las cuentas existentes.
+La [capa interna de habilitación, decisiones y revocación](15-revision-juridica-reglas.md) está implementada por separado. No se atribuye ninguna revisión profesional a las cuentas existentes; todavía no hay habilitaciones reales, interfaz de revisión ni activación.
 
 ## Persistencia implementada
 
@@ -53,4 +53,4 @@ php artisan migrate --path=database/migrations/2026_10_01_000001_crear_versiones
 
 Verificación del 1 de octubre de 2026: suite de la rama, 113 pruebas y 683 aserciones aprobadas. En la carpeta habitual también pasaron las 22 pruebas de versiones y las 20 del orquestador (42 pruebas, 190 aserciones), siempre contra `jurissim_pruebas`. Pint correcto. Se instaló exclusivamente la migración aditiva en `jurissim` local; comprobación de solo lectura posterior: cero versiones reales y tres triggers activos. No se sellaron borradores, asignaron revisores ni activaron reglas.
 
-Siguiente hito: registro de habilitación del revisor y decisiones anexas a la versión, manteniendo la activación deshabilitada hasta completar y verificar esa revisión.
+Siguiente hito: operaciones administrativas e interfaz de revisión sobre esta capa interna, manteniendo la activación como operación posterior y separada.
