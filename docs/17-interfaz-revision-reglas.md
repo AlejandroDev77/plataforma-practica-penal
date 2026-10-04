@@ -76,4 +76,4 @@ La primera corrida de navegador de la carpeta habitual tuvo un timeout esperando
 
 Se incorporaron únicamente los archivos de esta fase a la carpeta habitual, conservando los cambios ajenos. Commit local en la rama de trabajo; sin push, PR ni merge. No se iniciaron servicios permanentes ni se modificaron credenciales, cuentas, expedientes, proveedores o bases de datos. Los servidores frontend aislados usados en la comprobación no son un despliegue.
 
-Siguiente paso: diseñar la activación separada de una versión revisada y su vinculación al orquestador, con pruebas estructurales y revisión profesional real antes de cargar reglas bolivianas ejecutables.
+La siguiente fase comienza con la [preparación interna de activación](18-preparacion-activacion-reglas.md): validación estructural y diagnóstico, todavía sin activación ni vínculo ejecutable al orquestador. Se requiere revisión profesional real antes de cargar reglas bolivianas ejecutables.
