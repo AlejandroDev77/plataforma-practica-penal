@@ -9,6 +9,7 @@ import { fechaLegible, type Habilitacion } from '../../features/audiencias/model
 import { useActualizarReglas, useReglasQuery } from '../../features/audiencias/model/use-reglas'
 import { EstadoRegla, ErrorReglas, PaginacionReglas } from '../../features/audiencias/components/ReglasUi'
 import { HabilitacionForm, RetiroReglaForm, SellarVersionForm } from '../../features/audiencias/components/ReglasForms'
+import { PrepararInstruccionesForm } from '../../features/audiencias/components/PrepararInstruccionesForm'
 import './reglas-audiencia.css'
 
 export function ReglasAudienciaPage({ revision = false }: { revision?: boolean }) {
@@ -20,7 +21,7 @@ export function ReglasAudienciaPage({ revision = false }: { revision?: boolean }
   const [seccion, setSeccion] = useState<'versiones' | 'habilitaciones'>(() => parametros.get('seccion') === 'habilitaciones' ? 'habilitaciones' : 'versiones')
   const [tipo, setTipo] = useState('')
   const [pagina, setPagina] = useState(1)
-  const [formulario, setFormulario] = useState<'sellado' | 'habilitacion' | null>(null)
+  const [formulario, setFormulario] = useState<'sellado' | 'habilitacion' | 'instrucciones' | null>(null)
   const [retirar, setRetirar] = useState<Habilitacion | null>(null)
   const [aviso, setAviso] = useState('')
   const listaRef = useRef<HTMLElement>(null)
@@ -36,7 +37,8 @@ export function ReglasAudienciaPage({ revision = false }: { revision?: boolean }
   if (!permiso) return <section className="reglas-page"><PageHeading eyebrow="Reglas de audiencia" title="Acceso reservado" description="Solo la administración de la plataforma gestiona habilitaciones. Si tiene una habilitación jurídica, use su espacio de revisión." /><Link className="btn btn-secondary" to="/revision-reglas">Ir a revisión de reglas</Link></section>
   return <section ref={listaRef} tabIndex={-1} className="reglas-page"><PageHeading eyebrow={revision ? 'Revisión jurídica' : 'Configuración de audiencias'} title="Reglas de audiencia" description="Versiones para revisar, decisiones documentadas y habilitaciones con alcance definido.">
     <button type="button" className="btn btn-secondary" disabled={consulta.isFetching} onClick={() => { setAviso(''); void actualizar() }}><RefreshCw size={16} aria-hidden="true" />Actualizar</button>
-    {admin && <button type="button" className="btn btn-primary" disabled={!tipos.data?.length} onClick={() => setFormulario(seccion === 'versiones' ? 'sellado' : 'habilitacion')}><Plus size={16} aria-hidden="true" />{seccion === 'versiones' ? 'Sellar versión' : 'Habilitar revisor'}</button>}
+    {admin && <button type="button" className={seccion === 'versiones' ? 'btn btn-secondary' : 'btn btn-primary'} disabled={!tipos.data?.length} onClick={() => setFormulario(seccion === 'versiones' ? 'sellado' : 'habilitacion')}><Plus size={16} aria-hidden="true" />{seccion === 'versiones' ? 'Sellar versión' : 'Habilitar revisor'}</button>}
+    {admin && seccion === 'versiones' && <button type="button" className="btn btn-primary" disabled={!tipos.data?.length} onClick={() => setFormulario('instrucciones')}>Preparar instrucciones</button>}
   </PageHeading><p className="reglas-note reglas-limit"><ShieldCheck size={18} aria-hidden="true" /><span>La revisión jurídica no activa turnos de audiencia. Las reglas conservan su estado de ejecución por separado.</span></p>
     {aviso && <p role="status" className="reglas-success">{aviso}</p>}
     <div className="reglas-toolbar"><div className="reglas-switch" role="group" aria-label="Registros de reglas"><button type="button" aria-pressed={seccion === 'versiones'} onClick={() => { setSeccion('versiones'); setPagina(1) }}>Versiones</button><button type="button" aria-pressed={seccion === 'habilitaciones'} onClick={() => { setSeccion('habilitaciones'); setPagina(1) }}>{admin ? 'Habilitaciones' : 'Mis habilitaciones'}</button></div>
@@ -51,6 +53,7 @@ export function ReglasAudienciaPage({ revision = false }: { revision?: boolean }
       {consulta.data && !consulta.isError && <PaginacionReglas meta={consulta.data.meta} cambiar={setPagina} ocupada={consulta.isFetching} />}
     </div>
     {formulario === 'sellado' && <SellarVersionForm tipos={tipos.data ?? []} cerrar={cerrar} terminado={v => { cerrar(); navigate(`${raiz}/versiones/${v.id}`) }} />}
+    {formulario === 'instrucciones' && <PrepararInstruccionesForm tipos={tipos.data ?? []} cerrar={cerrar} terminado={v => { cerrar(); navigate(`${raiz}/versiones/${v.id}`) }} />}
     {formulario === 'habilitacion' && <HabilitacionForm tipos={tipos.data ?? []} cerrar={cerrar} terminado={() => { cerrar(); setPagina(1); setAviso('La habilitación quedó registrada. No se asignaron permisos administrativos.') }} />}
     {retirar && <RetiroReglaForm tipo="habilitaciones" id={retirar.id} etiqueta={`Cuenta revisora #${retirar.id_usuario_revisor} · Habilitación ${retirar.id}`} cerrar={cerrar} terminado={() => { cerrar(); setAviso('La habilitación fue retirada. El historial se conserva.') }} />}
   </section>

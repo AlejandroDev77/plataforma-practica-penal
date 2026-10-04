@@ -24,10 +24,11 @@ const v = { id: 1, id_tipo_audiencia: 1, id_usuario_autor: 1, numero_version: 1,
   contenido: { formato: 1, tipo: { nombre: tipo.name, activo: true, descripcion: null }, etapas: [{ id_etapa: 1, nombre: 'Etapa sintética', orden: 1, activo: true }], transiciones: [], turnos_catalogo_referencia: [],
     propuestas: [{ id_propuesta_turno: 1, id_etapa: 1, id_usuario_creador: 1, orden: 1, rol: 'juez', acto_propuesto: 'Actuación sintética para revisión', descripcion_propuesta: 'Este contenido no configura ningún procedimiento ni pretende describir una actuación jurídica real. '.repeat(5), referencia_normativa_propuesta: 'Referencia sintética pendiente de revisión.', observaciones: null }] } }
 function pagina(data, page = 1, last = 1, total = data.length) { return { data, meta: { current_page: page, last_page: last, total, per_page: 20 } } }
-async function escenario({ admin = false, habilitada = true, vacio = false, error = null, conflicto = false, sinSesion = false, estado = 'no_acreditada', largo = false, contrato = false } = {}) {
+async function escenario({ admin = false, habilitada = true, vacio = false, error = null, conflicto = false, sinSesion = false, estado = 'no_acreditada', largo = false, contrato = false, preparacionInvalida = false, falloPreparacion = null } = {}) {
   const contexto = await navegador.newContext({ viewport: { width: 1365, height: 950 } })
   const paginaUI = await contexto.newPage()
   const enviados = []
+  const preparaciones = []
   let accesoHabilitacion = true
   let historial = []
   let actual = structuredClone(v)
@@ -90,10 +91,25 @@ async function escenario({ admin = false, habilitada = true, vacio = false, erro
       }
       if (path.endsWith('/revocaciones')) return responder({ data: { id: 1, motivo: body.motivo } })
       if (path.endsWith('/habilitaciones')) return responder({ data: { ...h, ...body } }, 201)
-      if (path.endsWith('/versiones')) return responder({ data: actual }, 201)
+      if (path.endsWith('/versiones')) {
+        if (body.instrucciones) {
+          actual.revision_instrucciones = { estado: 'disponible', requiere_confirmacion: true }
+          actual.contenido.propuestas = [actual.contenido.propuestas[0], { ...actual.contenido.propuestas[0], id_propuesta_turno: 2, orden: 2, acto_propuesto: 'Segunda actuación sintética' }]
+          actual.contenido.contrato_ejecucion = { formato: 1, perfil: 'mvp-defensa-aciclico-ejecucion-v1', rol_usuario: 'abogado_defensor', instrucciones: body.instrucciones }
+        }
+        return responder({ data: actual }, 201)
+      }
       errores.push('POST no previsto: ' + path); return ruta.abort()
     }
     if (error && path.endsWith('/versiones')) return responder({ message: 'Error sintético' }, error)
+    if (path.endsWith('/tipos/1/preparacion-instrucciones')) {
+      preparaciones.push(path)
+      if (falloPreparacion && preparaciones.length === 1) return responder({ message: 'Error sintético' }, falloPreparacion)
+      return responder({ data: { id_tipo_audiencia: 1, huella_borrador: 'd'.repeat(64), estructura_valida: !preparacionInvalida, execution_authorized: false,
+        contenido: { formato: 1, tipo: { id_tipo_audiencia: 1, nombre: tipo.name, descripcion: null, activo: true },
+          etapas: [{ id_etapa: 1, nombre: 'Etapa sintética', orden: 1, activo: true, es_inicial: true, es_final: true }], transiciones: [],
+          propuestas: [actual.contenido.propuestas[0], { ...actual.contenido.propuestas[0], id_propuesta_turno: 2, orden: 2, acto_propuesto: 'Segunda actuación sintética' }] } } })
+    }
     if (path.endsWith('/habilitaciones')) return accesoHabilitacion ? responder(pagina(habilitada && !vacio ? [h] : [])) : responder({ message: 'Permiso retirado en escenario sintético' }, 403)
     if (path.endsWith('/versiones/1/revisiones')) return responder(pagina(historial))
     if (path.endsWith('/versiones/1')) return habilitada || admin ? responder({ data: actual }) : responder({ message: 'No disponible' }, 404)
@@ -104,7 +120,7 @@ async function escenario({ admin = false, habilitada = true, vacio = false, erro
     if (path === '/api/v1/logout') return responder({})
     errores.push('API no prevista: ' + path); return ruta.abort()
   })
-  return { contexto, p: paginaUI, enviados, denegarHabilitacion: () => { accesoHabilitacion = false } }
+  return { contexto, p: paginaUI, enviados, preparaciones, denegarHabilitacion: () => { accesoHabilitacion = false } }
 }
 function nuevaFecha() { return new Date().toISOString() }
 async function prueba(nombre, opciones, realizar) {
@@ -120,6 +136,20 @@ async function abrirRevision(p) {
   await p.goto(url + '/revision-reglas/versiones/1')
   await p.getByRole('button', { name: 'Registrar revisión', exact: true }).click()
 }
+async function abrirPreparacion(p, esperarTexto = true) {
+  await p.goto(url + '/configuracion/reglas')
+  await p.getByRole('button', { name: 'Preparar instrucciones', exact: true }).click()
+  await p.getByLabel('Audiencia para preparar', { exact: false }).selectOption('1')
+  await p.getByRole('button', { name: 'Consultar propuestas', exact: true }).click()
+  if (esperarTexto) await p.getByRole('textbox', { name: /Instrucción de este turno/ }).waitFor()
+}
+async function completarPreparacion(p) {
+  await p.getByRole('textbox', { name: /Instrucción de este turno/ }).fill('Instrucción sintética uno.')
+  await p.getByRole('button', { name: 'Propuesta siguiente', exact: true }).click()
+  await p.getByRole('textbox', { name: /Instrucción de este turno/ }).fill('Instrucción sintética dos.')
+  await p.getByRole('textbox', { name: /Motivo de esta versión/ }).fill('Copia sintética de prueba.')
+  await p.getByRole('checkbox', { name: /Confirmación de las instrucciones/ }).check()
+}
 async function completarRevision(p) {
   await p.getByRole('textbox', { name: /Fundamento y observaciones/ }).fill('Observación exclusivamente sintética.')
   await p.getByLabel(/Fecha de comprobación de vigencia/).fill(fechaBolivia)
@@ -128,6 +158,108 @@ async function completarRevision(p) {
   await p.getByRole('checkbox', { name: /Confirmación de la revisión/ }).check()
 }
 try {
+  await prueba('preparación administrativa: instrucciones vacías, pasos y sellado exacto sin activación', { admin: true }, async ({ p, enviados, preparaciones }) => {
+    await p.goto(url + '/configuracion/reglas')
+    await p.getByRole('button', { name: 'Preparar instrucciones', exact: true }).click()
+    await p.getByLabel('Audiencia para preparar', { exact: false }).selectOption('1')
+    assert.equal(preparaciones.length, 0)
+    await p.getByRole('button', { name: 'Consultar propuestas', exact: true }).click()
+    const instruccion = p.getByRole('textbox', { name: /Instrucción de este turno/ })
+    await instruccion.waitFor()
+    assert.equal(await instruccion.inputValue(), '')
+    assert.equal(enviados.length, 0)
+    assert.equal(await p.getByRole('checkbox', { name: /Confirmación de las instrucciones/ }).isDisabled(), true)
+    const texto = '  Instrucción sintética propia.\n<script>No ejecutar.</script>  '
+    await instruccion.fill(texto)
+    await p.getByRole('button', { name: 'Propuesta siguiente', exact: true }).click()
+    await p.waitForFunction(() => document.activeElement?.textContent === 'Segunda actuación sintética')
+    assert.equal(await instruccion.inputValue(), '')
+    await instruccion.fill('Segunda instrucción escrita, solo sintética.')
+    await p.getByRole('textbox', { name: /Motivo de esta versión/ }).fill('Copia exclusivamente sintética.')
+    await p.getByRole('checkbox', { name: /Confirmación de las instrucciones/ }).check()
+    await p.getByRole('textbox', { name: /Motivo de esta versión/ }).fill('Motivo sintético modificado.')
+    assert.equal(await p.getByRole('checkbox', { name: /Confirmación de las instrucciones/ }).isChecked(), false)
+    await p.getByRole('button', { name: 'Propuesta anterior', exact: true }).click()
+    assert.equal(await instruccion.inputValue(), texto)
+    await p.getByRole('checkbox', { name: /Confirmación de las instrucciones/ }).check()
+    await p.screenshot({ path: resolve(salida, 'preparacion-escritorio.png') })
+    await p.getByRole('button', { name: 'Sellar copia con instrucciones', exact: true }).dblclick()
+    await p.getByRole('heading', { name: 'Propuestas e instrucciones', exact: true }).waitFor()
+    assert.equal(enviados.length, 1)
+    assert.deepEqual(enviados[0].body, { motivo: 'Motivo sintético modificado.', confirmacion_instrucciones: true,
+      huella_borrador_esperada: 'd'.repeat(64), instrucciones: [{ id_propuesta_turno: 1, texto }, { id_propuesta_turno: 2, texto: 'Segunda instrucción escrita, solo sintética.' }] })
+    await p.getByText('Sin activación de turnos', { exact: true }).waitFor()
+  })
+  await prueba('preparación: pendiente o texto excesivo impide confirmar, edición restablece confirmación', { admin: true }, async ({ p, enviados }) => {
+    await abrirPreparacion(p)
+    const texto = p.getByRole('textbox', { name: /Instrucción de este turno/ })
+    await texto.fill('Texto sintético.')
+    await p.getByRole('button', { name: 'Ir a la primera pendiente', exact: true }).click()
+    await p.waitForFunction(() => document.activeElement?.textContent === 'Segunda actuación sintética')
+    await texto.fill('😀'.repeat(5001))
+    assert.equal(await p.getByRole('checkbox', { name: /Confirmación de las instrucciones/ }).isDisabled(), true)
+    await texto.fill('Texto sintético válido.')
+    await p.getByRole('checkbox', { name: /Confirmación de las instrucciones/ }).check()
+    await texto.fill('Texto sintético cambiado.')
+    assert.equal(await p.getByRole('checkbox', { name: /Confirmación de las instrucciones/ }).isChecked(), false)
+    await p.getByRole('button', { name: 'Sellar copia con instrucciones', exact: true }).click()
+    await p.getByRole('alert').filter({ hasText: 'Revise los campos' }).waitFor()
+    assert.equal(enviados.length, 0)
+  })
+  await prueba('preparación: conflicto conserva texto y bloquea reenvío sin renovar huella', { admin: true, conflicto: true }, async ({ p, enviados, preparaciones }) => {
+    await abrirPreparacion(p)
+    await completarPreparacion(p)
+    await p.getByRole('button', { name: 'Sellar copia con instrucciones', exact: true }).click()
+    await p.getByRole('alert').filter({ hasText: 'El registro cambió' }).waitFor()
+    assert.equal(await p.getByRole('button', { name: 'Sellar copia con instrucciones', exact: true }).isDisabled(), true)
+    assert.equal(await p.getByRole('textbox', { name: /Instrucción de este turno/ }).inputValue(), 'Instrucción sintética dos.')
+    assert.equal(enviados.length, 1)
+    assert.equal(preparaciones.length, 1)
+    await p.keyboard.press('Escape')
+    await p.getByRole('dialog').waitFor({ state: 'hidden' })
+    await p.waitForFunction(() => document.activeElement?.classList.contains('reglas-page'))
+  })
+  await prueba('preparación incompatible no ofrece instrucciones ni sellado', { admin: true, preparacionInvalida: true }, async ({ p, enviados }) => {
+    await abrirPreparacion(p, false)
+    await p.getByRole('heading', { name: 'El borrador necesita ajustes' }).waitFor()
+    assert.equal(await p.getByRole('button', { name: 'Sellar copia con instrucciones', exact: true }).count(), 0)
+    assert.equal(enviados.length, 0)
+  })
+  await prueba('consulta de preparación fallida permite recuperación explícita sin escrituras', { admin: true, falloPreparacion: 503 }, async ({ p, enviados, preparaciones }) => {
+    await abrirPreparacion(p, false)
+    await p.getByRole('alert').filter({ hasText: 'No pudimos consultar' }).waitFor()
+    await p.getByRole('button', { name: 'Volver a consultar', exact: true }).click()
+    await p.getByRole('textbox', { name: /Instrucción de este turno/ }).waitFor()
+    assert.equal(preparaciones.length, 2)
+    assert.equal(enviados.length, 0)
+  })
+  await prueba('preparación móvil, texto largo, teclado, reflujo y rol sin administración', { admin: true, largo: true }, async ({ p, enviados }) => {
+    await abrirPreparacion(p)
+    for (const width of [320, 390, 768, 1365]) {
+      await p.setViewportSize({ width, height: 900 })
+      assert.equal(await p.locator('dialog').evaluate(e => e.scrollWidth <= e.clientWidth + 1), true, 'Preparación a ' + width)
+    }
+    await p.setViewportSize({ width: 390, height: 844 })
+    await p.getByRole('textbox', { name: /Instrucción de este turno/ }).fill('Texto sintético explícito.')
+    await p.getByRole('textbox', { name: /Instrucción de este turno/ }).scrollIntoViewIfNeeded()
+    await p.screenshot({ path: resolve(salida, 'preparacion-movil.png') })
+    await p.getByRole('button', { name: 'Propuesta siguiente', exact: true }).focus()
+    await p.keyboard.press('Enter')
+    await p.waitForFunction(() => document.activeElement?.textContent === 'Segunda actuación sintética')
+    await p.addStyleTag({ content: ':root { font-size: 28px !important; }' })
+    assert.equal(await p.locator('dialog').evaluate(e => e.scrollWidth <= e.clientWidth + 1), true)
+    await p.emulateMedia({ reducedMotion: 'reduce' })
+    await p.keyboard.press('Escape')
+    await p.getByRole('dialog').waitFor({ state: 'hidden' })
+    assert.equal(enviados.length, 0)
+  })
+  await prueba('persona revisora no administra preparación de instrucciones', {}, async ({ p, enviados, preparaciones }) => {
+    await p.goto(url + '/revision-reglas')
+    await p.getByRole('heading', { name: 'Reglas de audiencia', exact: true }).waitFor()
+    assert.equal(await p.getByRole('button', { name: 'Preparar instrucciones', exact: true }).count(), 0)
+    assert.equal(preparaciones.length, 0)
+    assert.equal(enviados.length, 0)
+  })
   await prueba('administración: listado, filtro y paginación', { admin: true }, async ({ p }) => {
     await p.goto(url + '/configuracion/reglas')
     await p.getByRole('link', { name: /Versión 1/ }).waitFor()

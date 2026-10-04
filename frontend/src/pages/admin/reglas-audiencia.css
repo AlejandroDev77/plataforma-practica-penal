@@ -61,6 +61,11 @@
 .reglas-instruccion { border-top: 1px solid var(--reglas-line); padding-top: 1rem; margin-top: var(--reglas-gap); }
 .reglas-instruccion h4 { color: var(--color-ink-700); font-size: .85rem; font-weight: 600; margin-bottom: .5rem; }
 .reglas-instruccion p { max-width: 75ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reglas-editor-turno { border-top: 1px solid var(--reglas-line); padding-top: 1rem; overflow-wrap: anywhere; }
+.reglas-editor-turno h3 { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 450; margin-bottom: .75rem; }
+.reglas-editor-turno > p:not(.reglas-kicker) { white-space: pre-wrap; }
+.reglas-editor-turno dl { margin: 1rem 0; }
+.reglas-editor-pasos { display: flex; flex-wrap: wrap; gap: var(--reglas-gap); justify-content: space-between; }
 .reglas-cobertura { border-top: 1px solid var(--reglas-line); margin-top: var(--reglas-gap); padding-top: 1rem; }
 .reglas-cobertura > p { color: var(--color-ink-700); font-size: .9rem; line-height: 1.65; }
 .reglas-reading-actions:has(button) { padding: var(--reglas-inset); border-top: 1px solid var(--reglas-line); display: flex; justify-content: flex-end; }

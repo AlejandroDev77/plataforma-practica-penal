@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 final class SellarVersionReglasAudiencia
 {
-    public function ejecutar(User $actor, int $idTipoAudiencia, string $motivo, ?array $instrucciones = null, mixed $confirmacionInstrucciones = false): VersionReglasAudiencia
+    public function ejecutar(User $actor, int $idTipoAudiencia, string $motivo, ?array $instrucciones = null, mixed $confirmacionInstrucciones = false, ?string $huellaBorradorEsperada = null): VersionReglasAudiencia
     {
         // Reconsultar los permisos: no confiar en relaciones de roles ya cargadas.
         if (! User::query()->findOrFail($actor->getKey())->hasRole('administrador_plataforma')) {
@@ -26,31 +26,20 @@ final class SellarVersionReglasAudiencia
             throw new DomainException('Debe confirmar expresamente las instrucciones que se conservaran.');
         }
 
-        return DB::transaction(function () use ($actor, $idTipoAudiencia, $motivo, $instrucciones): VersionReglasAudiencia {
+        return DB::transaction(function () use ($actor, $idTipoAudiencia, $motivo, $instrucciones, $huellaBorradorEsperada): VersionReglasAudiencia {
             // Serializa el numero de version por tipo, sin MAX global ni IDs del cliente.
             TipoAudiencia::query()->whereKey($idTipoAudiencia)->lockForUpdate()->firstOrFail();
             // Una unica sentencia captura todos los componentes bajo la misma vista MVCC.
             // No convertir las descripciones propuestas en instrucciones ejecutables.
-            $snapshot = DB::selectOne(<<<'SQL'
-                SELECT jsonb_build_object(
-                    'formato', 1,
-                    'tipo', to_jsonb(t),
-                    'etapas', COALESCE((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.orden, e.id_etapa)
-                        FROM etapas_audiencia e WHERE e.id_tipo_audiencia = t.id_tipo_audiencia), '[]'::jsonb),
-                    'transiciones', COALESCE((SELECT jsonb_agg(to_jsonb(tr) ORDER BY tr.id_etapa_origen, tr.id_etapa_destino)
-                        FROM transiciones_audiencia tr WHERE tr.id_tipo_audiencia = t.id_tipo_audiencia), '[]'::jsonb),
-                    'propuestas', COALESCE((SELECT jsonb_agg(to_jsonb(p) ORDER BY p.id_etapa, p.orden)
-                        FROM propuestas_turnos_audiencia p WHERE p.id_tipo_audiencia = t.id_tipo_audiencia), '[]'::jsonb),
-                    'turnos_catalogo_referencia', COALESCE((SELECT jsonb_agg(to_jsonb(tc) ORDER BY tc.id_etapa, tc.orden)
-                        FROM turnos_etapa_audiencia tc WHERE tc.id_tipo_audiencia = t.id_tipo_audiencia), '[]'::jsonb)
-                ) AS contenido
-                FROM tipos_audiencia t WHERE t.id_tipo_audiencia = ?
-                SQL, [$idTipoAudiencia]);
-            $contenido = json_decode($snapshot->contenido, true, flags: JSON_THROW_ON_ERROR);
+            $borrador = app(CapturarBorradorReglas::class)->ejecutar($idTipoAudiencia);
+            $contenido = $borrador['contenido'];
+            if ($huellaBorradorEsperada !== null && ! hash_equals($borrador['huella_borrador'], $huellaBorradorEsperada)) {
+                throw new DomainException('El borrador o la ultima version cambiaron. Consulte otra vez antes de sellar.');
+            }
             if ($contenido['propuestas'] === [] || $contenido['etapas'] === []) {
                 throw new DomainException('Se requieren etapas y al menos una propuesta para sellar una version.');
             }
-            if (strlen($snapshot->contenido) > 2_000_000) {
+            if ($borrador['bytes'] > 2_000_000) {
                 throw new DomainException('El borrador supera el limite de 2 MB para una version.');
             }
             if ($instrucciones !== null) {

@@ -1,48 +1,15 @@
-import { useRef, useState, type FormEvent } from 'react'
-import axios from 'axios'
-import { ZodError } from 'zod'
+import { useState } from 'react'
+import { useRegistro } from '../model/use-registro-reglas'
 import { Modal } from '../../../components/ui/AdminUi'
 import { CampoRegla, HuellaDocumento } from './ReglasUi'
 import { datosHabilitacion, datosRetiro, datosSellado, consultarInstrucciones, hoyBolivia, prepararRevision, type Habilitacion, type VersionReglas } from '../model/reglas'
 import { habilitarRevisor, registrarRevision, retirarRegistro, sellarVersion } from '../api/reglas-api'
 import type { TipoAudienciaDisponible } from '../api/propuestas-turnos-api'
 
-function useRegistro(guardar: () => Promise<unknown>, terminado: () => void) {
-  const cerrojo = useRef(false)
-  const [ocupado, setOcupado] = useState(false)
-  const [bloqueado, setBloqueado] = useState(false)
-  const [error, setError] = useState('')
-  const [errores, setErrores] = useState<Record<string, string>>({})
-  async function enviar(evento: FormEvent) {
-    evento.preventDefault()
-    if (cerrojo.current || bloqueado) return
-    cerrojo.current = true; setOcupado(true); setError(''); setErrores({})
-    try { await guardar(); terminado() }
-    catch (fallo) {
-      if (fallo instanceof ZodError) {
-        setErrores(Object.fromEntries(fallo.issues.map(i => [i.path.join('.'), i.message])))
-        setError('Revise los campos indicados antes de registrar.')
-      } else if (axios.isAxiosError(fallo)) {
-        const estado = fallo.response?.status
-        if (estado === 422) {
-          setErrores(Object.fromEntries(Object.keys(fallo.response?.data?.errors ?? {}).map(c => [c, 'Revise este campo.'])))
-          setError('Hay datos incompletos o inválidos. Revise los campos indicados.')
-        } else {
-          setBloqueado(true)
-          setError(estado === 409 ? 'El registro cambió o la operación no está permitida. Cierre el formulario y vuelva a revisar el registro antes de decidir.'
-            : estado === 401 || estado === 419 ? 'Su sesión venció. Cierre el formulario e inicie sesión de nuevo.'
-              : estado === 403 || estado === 404 ? 'Su cuenta ya no puede realizar esta operación. Cierre y compruebe su habilitación.'
-                : 'No recibimos una confirmación del servidor. Cierre y vuelva a consultar antes de repetir: la solicitud podría haberse registrado.')
-        }
-      } else setError(fallo instanceof Error ? fallo.message : 'No fue posible registrar esta operación.')
-    } finally { cerrojo.current = false; setOcupado(false) }
-  }
-  return { enviar, ocupado, bloqueado, error, errores }
-}
-function AvisoFormulario({ registro }: { registro: ReturnType<typeof useRegistro> }) {
+export function AvisoFormulario({ registro }: { registro: ReturnType<typeof useRegistro> }) {
   return registro.error ? <p className="reglas-error" role="alert" tabIndex={-1}>{registro.error}</p> : null
 }
-function AccionesFormulario({ registro, cancelar, texto }: { registro: ReturnType<typeof useRegistro>; cancelar: () => void; texto: string }) {
+export function AccionesFormulario({ registro, cancelar, texto }: { registro: ReturnType<typeof useRegistro>; cancelar: () => void; texto: string }) {
   return <div className="modal-actions"><button type="button" className="btn btn-secondary" disabled={registro.ocupado} onClick={cancelar}>{registro.bloqueado ? 'Cerrar y consultar' : 'Cancelar'}</button><button type="submit" className="btn btn-primary" disabled={registro.ocupado || registro.bloqueado}>{registro.ocupado ? 'Registrando…' : texto}</button></div>
 }
 export function SellarVersionForm({ tipos, cerrar, terminado }: { tipos: TipoAudienciaDisponible[]; cerrar: () => void; terminado: (version: VersionReglas) => void }) {

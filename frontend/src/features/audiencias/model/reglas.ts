@@ -125,6 +125,44 @@ export const datosRetiro = z.object({ motivo: texto(2000), confirmado: confirmac
 export type DatosHabilitacion = z.output<typeof datosHabilitacion>
 export type DatosRevision = ReturnType<typeof prepararRevision>
 
+const idSeguro = z.number().int().positive().refine(Number.isSafeInteger)
+const datosBorrador = z.object({
+  id_tipo_audiencia: idSeguro, huella_borrador: huella, estructura_valida: z.boolean(), execution_authorized: z.literal(false),
+  contenido: z.object({
+    formato: z.literal(1),
+    tipo: z.object({ id_tipo_audiencia: idSeguro, nombre: z.string().min(1), descripcion: z.string().nullable(), activo: z.boolean() }),
+    etapas: z.array(z.object({ id_etapa: idSeguro, nombre: z.string(), orden: z.number().int(), activo: z.boolean(), es_inicial: z.boolean(), es_final: z.boolean() })).max(100),
+    transiciones: z.array(z.object({ id_etapa_origen: idSeguro, id_etapa_destino: idSeguro, activo: z.boolean() })).max(1000),
+    propuestas: z.array(z.object({ id_propuesta_turno: idSeguro, id_etapa: idSeguro, id_usuario_creador: idSeguro.nullable(), orden: z.number().int(),
+      rol: z.string(), acto_propuesto: z.string(), descripcion_propuesta: z.string(), referencia_normativa_propuesta: z.string().nullable(), observaciones: z.string().nullable() })).max(10000),
+  }),
+})
+export type BorradorInstrucciones = z.output<typeof datosBorrador>
+export function validarBorradorInstrucciones(entrada: unknown, tipo: number): BorradorInstrucciones {
+  const datos = datosBorrador.parse(entrada)
+  if (datos.id_tipo_audiencia !== tipo || datos.contenido.tipo.id_tipo_audiencia !== tipo) throw new Error('No recibimos el borrador de la audiencia elegida.')
+  return datos
+}
+export function prepararSelladoInstrucciones(entrada: unknown, borrador: BorradorInstrucciones) {
+  const copia = validarBorradorInstrucciones(borrador, borrador.id_tipo_audiencia)
+  const propuestas = copia.contenido.propuestas
+  if (!copia.estructura_valida || !copia.contenido.tipo.activo || !propuestas.length
+    || new Set(propuestas.map(p => p.id_propuesta_turno)).size !== propuestas.length
+    || propuestas.some(p => !p.id_usuario_creador || !['juez', 'fiscal', 'abogado_defensor'].includes(p.rol)
+      || p.orden < 1 || p.orden > 100 || !copia.contenido.etapas.some(e => e.id_etapa === p.id_etapa && e.activo))) {
+    throw new Error('Corrija la estructura y la autoría de las propuestas antes de preparar instrucciones.')
+  }
+  const datos = z.object({ motivo: texto(2000), confirmacion_instrucciones: confirmacion,
+    instrucciones: contratoRevision.shape.instrucciones }).parse(entrada)
+  if (datos.instrucciones.length !== propuestas.length
+    || new Set(datos.instrucciones.map(i => i.id_propuesta_turno)).size !== propuestas.length
+    || datos.instrucciones.some((i, indice) => i.id_propuesta_turno !== propuestas[indice].id_propuesta_turno)) {
+    throw new Error('Cada propuesta consultada requiere una instrucción propia, en el orden mostrado.')
+  }
+  return { ...datos, huella_borrador_esperada: copia.huella_borrador }
+}
+export type DatosSelladoInstrucciones = ReturnType<typeof prepararSelladoInstrucciones>
+
 export async function huellaArchivo(archivo: File): Promise<string> {
   if (archivo.size > 20 * 1024 * 1024) throw new Error('Use un documento de hasta 20 MB para calcular su huella.')
   const bytes = await archivo.arrayBuffer()

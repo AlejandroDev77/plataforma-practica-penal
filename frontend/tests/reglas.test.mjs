@@ -1,7 +1,44 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { consultarInstrucciones, datosHabilitacion, datosRetiro, datosSellado, hoyBolivia, huellaArchivo, puedeRevisar, prepararRevision } from '../src/features/audiencias/model/reglas.ts'
+import { consultarInstrucciones, datosHabilitacion, datosRetiro, datosSellado, hoyBolivia, huellaArchivo, puedeRevisar, prepararRevision, prepararSelladoInstrucciones, validarBorradorInstrucciones } from '../src/features/audiencias/model/reglas.ts'
+
+const borrador = () => ({ id_tipo_audiencia: 1, huella_borrador: 'c'.repeat(64), estructura_valida: true, execution_authorized: false,
+  contenido: { formato: 1, tipo: { id_tipo_audiencia: 1, nombre: 'Sintética', descripcion: null, activo: true },
+    etapas: [{ id_etapa: 1, nombre: 'Etapa sintética', orden: 1, activo: true, es_inicial: true, es_final: true }], transiciones: [],
+    propuestas: [{ id_propuesta_turno: 1, id_etapa: 1, id_usuario_creador: 1, orden: 1, rol: 'abogado_defensor', acto_propuesto: 'Sintético.', descripcion_propuesta: 'No copiar automáticamente.', referencia_normativa_propuesta: null, observaciones: null }] } })
+const sellado = () => ({ motivo: 'Copia sintética.', confirmacion_instrucciones: true, instrucciones: [{ id_propuesta_turno: 1, texto: '  Texto explícito.\nSin recortes.  ' }] })
+test('sellado de instrucciones deriva la huella del borrador y conserva texto, no roles ni autoridades', () => {
+  const entrada = { ...sellado(), huella_borrador_esperada: 'f'.repeat(64), id_usuario_autor: 999, execution_authorized: true }
+  const salida = prepararSelladoInstrucciones(entrada, borrador())
+  assert.equal(salida.huella_borrador_esperada, borrador().huella_borrador)
+  assert.equal(salida.instrucciones[0].texto, entrada.instrucciones[0].texto)
+  assert.equal(salida.id_usuario_autor, undefined)
+  assert.equal(salida.execution_authorized, undefined)
+})
+test('borrador debe corresponder a la audiencia consultada, ser compatible y tener autoría conocida', () => {
+  assert.throws(() => validarBorradorInstrucciones(borrador(), 9))
+  for (const cambio of [{ estructura_valida: false }, { execution_authorized: true }, { huella_borrador: 'mala' }]) {
+    assert.throws(() => prepararSelladoInstrucciones(sellado(), { ...borrador(), ...cambio }))
+  }
+  for (const cambio of [{ id_usuario_creador: null }, { rol: 'otro' }, { id_etapa: 999 }, { orden: 0 }]) {
+    const b = borrador(); b.contenido.propuestas[0] = { ...b.contenido.propuestas[0], ...cambio }
+    assert.throws(() => prepararSelladoInstrucciones(sellado(), b))
+  }
+})
+test('instrucciones requieren correspondencia completa e IDs estrictos sin campos adicionales', () => {
+  for (const instrucciones of [[], [{ id_propuesta_turno: '1', texto: 'Texto.' }], [{ id_propuesta_turno: 2, texto: 'Ajeno.' }],
+    [{ id_propuesta_turno: 1, texto: 'Texto.', rol: 'juez' }], [...sellado().instrucciones, ...sellado().instrucciones]]) {
+    assert.throws(() => prepararSelladoInstrucciones({ ...sellado(), instrucciones }, borrador()))
+  }
+})
+test('sellado no acepta confirmaciones coercionadas ni instrucciones vacías o excesivas', () => {
+  for (const valor of [false, 1, 'true', undefined]) assert.throws(() => prepararSelladoInstrucciones({ ...sellado(), confirmacion_instrucciones: valor }, borrador()))
+  for (const texto of ['', '  \n\t', '😀'.repeat(5001)]) {
+    assert.throws(() => prepararSelladoInstrucciones({ ...sellado(), instrucciones: [{ id_propuesta_turno: 1, texto }] }, borrador()))
+  }
+  assert.equal(prepararSelladoInstrucciones({ ...sellado(), instrucciones: [{ id_propuesta_turno: 1, texto: '😀'.repeat(5000) }] }, borrador()).instrucciones[0].texto.length, 10000)
+})
 
 const futura = dias => new Date(Date.now() + dias * 86400000).toISOString()
 const hab = () => ({ id: 1, id_usuario_revisor: 2, id_usuario_habilitador: 1, id_tipo_audiencia: 1, alcance: 'Ámbito sintético.', estado: 'vigente', revocacion: null, acreditacion_verificada: true, fecha_vencimiento: futura(3) })

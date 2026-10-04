@@ -13,6 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
+        // Texto explícito que debe conservar sus espacios y saltos al sellarse.
+        $middleware->trimStrings(except: ['instrucciones.*.texto']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

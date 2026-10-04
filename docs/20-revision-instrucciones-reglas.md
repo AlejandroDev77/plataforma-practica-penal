@@ -44,3 +44,5 @@ El script `frontend/tests/reglas-ui.mjs` permite `JURISSIM_UI_URL`, `JURISSIM_PL
 ## Trabajo siguiente
 
 Preparar desde administración instrucciones explícitas para sellar una nueva copia completa, con validación y autoría, sin reutilizar automáticamente textos del catálogo. Después exponer la activación administrativa como decisión separada. La conexión con el orquestador requiere otra fase: fijar la activación exacta al crear la práctica y revalidar sus dependencias al mutar turnos. Sigue vigente `execution_authorized=false`; no se habilita ejecución por haber aprobado una revisión.
+
+La preparación administrativa se implementa en la fase posterior `21-preparacion-instrucciones-administracion.md`. La activación pública y la vinculación con prácticas siguen pendientes.

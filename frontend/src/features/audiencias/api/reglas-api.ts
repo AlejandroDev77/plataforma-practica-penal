@@ -1,5 +1,5 @@
 import { httpClient } from '../../../shared/api/http-client'
-import type { DatosHabilitacion, DatosRevision, Habilitacion, Pagina, RevisionReglas, VersionReglas } from '../model/reglas'
+import { validarBorradorInstrucciones, type BorradorInstrucciones, type DatosSelladoInstrucciones, type DatosHabilitacion, type DatosRevision, type Habilitacion, type Pagina, type RevisionReglas, type VersionReglas } from '../model/reglas'
 
 const base = '/api/v1/reglas-audiencia'
 interface Filtros { page: number; id_tipo_audiencia?: number }
@@ -26,6 +26,13 @@ export async function consultarHabilitacionPropia(tipo: number, usuario: number,
 }
 export async function sellarVersion(tipo: number, motivo: string): Promise<VersionReglas> {
   return (await httpClient.post<{ data: VersionReglas }>(`${base}/tipos/${tipo}/versiones`, { motivo })).data.data
+}
+export async function consultarBorradorInstrucciones(tipo: number, signal?: AbortSignal): Promise<BorradorInstrucciones> {
+  const respuesta = await httpClient.get<{ data: unknown }>(`${base}/tipos/${tipo}/preparacion-instrucciones`, { signal })
+  return validarBorradorInstrucciones(respuesta.data.data, tipo)
+}
+export async function sellarInstrucciones(tipo: number, datos: DatosSelladoInstrucciones): Promise<VersionReglas> {
+  return (await httpClient.post<{ data: VersionReglas }>(`${base}/tipos/${tipo}/versiones`, datos)).data.data
 }
 export async function habilitarRevisor(datos: DatosHabilitacion): Promise<Habilitacion> {
   return (await httpClient.post<{ data: Habilitacion }>(`${base}/habilitaciones`, datos)).data.data

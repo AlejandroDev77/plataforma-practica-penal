@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\V1\BorradorInstruccionesResource;
 use App\Http\Resources\Api\V1\HabilitacionRevisionJuridicaResource;
 use App\Http\Resources\Api\V1\RevisionReglasAudienciaResource;
 use App\Http\Resources\Api\V1\VersionReglasAudienciaResource;
@@ -10,6 +11,7 @@ use App\Models\HabilitacionRevisionJuridica;
 use App\Models\RevisionReglasAudiencia;
 use App\Models\User;
 use App\Models\VersionReglasAudiencia;
+use App\Services\Simulaciones\CapturarBorradorReglas;
 use App\Services\Simulaciones\GestionarRevisionJuridicaReglas;
 use App\Services\Simulaciones\SellarVersionReglasAudiencia;
 use DomainException;
@@ -61,10 +63,34 @@ final class GobiernoReglasAudienciaController extends Controller
     public function storeVersion(Request $request, int $tipo, SellarVersionReglasAudiencia $sellador): JsonResponse
     {
         abort_unless($this->esAdministrador($request), 403);
-        $datos = $request->validate(['motivo' => ['required', 'string', 'max:2000']]);
-        $registro = $sellador->ejecutar($request->user(), $tipo, $datos['motivo']);
+        $conInstrucciones = $request->exists('instrucciones');
+        $datos = $request->validate([
+            'motivo' => ['required', 'string', 'max:2000'],
+            'instrucciones' => $conInstrucciones ? ['required', 'array', 'list', 'min:1', 'max:10000'] : ['prohibited'],
+            'huella_borrador_esperada' => $conInstrucciones ? ['required', 'string', 'regex:/^[0-9a-f]{64}$/'] : ['prohibited'],
+            'confirmacion_instrucciones' => $conInstrucciones ? ['required', function ($campo, $valor, $fallar): void {
+                if ($valor !== true) {
+                    $fallar('Confirme expresamente las instrucciones que se conservaran.');
+                }
+            }] : ['prohibited'],
+        ]);
+        $registro = $sellador->ejecutar($request->user(), $tipo, $datos['motivo'],
+            $conInstrucciones ? $datos['instrucciones'] : null,
+            $conInstrucciones ? $datos['confirmacion_instrucciones'] : false,
+            $conInstrucciones ? $datos['huella_borrador_esperada'] : null);
 
         return response()->json(['data' => (new VersionReglasAudienciaResource($registro))->resolve($request)], 201);
+    }
+
+    public function prepararInstrucciones(Request $request, int $tipo, CapturarBorradorReglas $captura): JsonResponse
+    {
+        abort_unless($this->esAdministrador($request), 403);
+        $borrador = $captura->ejecutar($tipo);
+        if ($borrador['bytes'] > 2_000_000) {
+            throw new DomainException('El borrador supera el limite permitido.');
+        }
+
+        return response()->json(['data' => (new BorradorInstruccionesResource($borrador))->resolve($request)]);
     }
 
     public function indexHabilitaciones(Request $request): JsonResponse

@@ -54,6 +54,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/tipos-audiencia', [TipoAudienciaController::class, 'index']);
         Route::prefix('reglas-audiencia')->middleware(NoAlmacenarReglas::class)->group(function (): void {
+            Route::get('/tipos/{tipo}/preparacion-instrucciones', [GobiernoReglasAudienciaController::class, 'prepararInstrucciones'])->whereNumber('tipo')->middleware('throttle:10,1');
             Route::get('/versiones', [GobiernoReglasAudienciaController::class, 'index']);
             Route::get('/versiones/{version}', [GobiernoReglasAudienciaController::class, 'show'])->whereNumber('version');
             Route::get('/versiones/{version}/revisiones', [GobiernoReglasAudienciaController::class, 'indexRevisiones'])->whereNumber('version');
