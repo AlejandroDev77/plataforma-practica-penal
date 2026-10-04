@@ -23,14 +23,14 @@ export function AppShell() {
   const { records, profile, activity, notificationsRead, readNotifications } = useAdminStore()
   const { data: user } = useCurrentUser()
   const navigationGroups = groups.map((group) => group.label === 'ADMINISTRACIÓN' && user?.roles.includes('administrador_plataforma')
-    ? { ...group, items: [...group.items, { title: 'Propuestas de turnos', path: '/configuracion/turnos', icon: ListOrdered }] }
+    ? { ...group, items: [...group.items, { title: 'Propuestas de turnos', path: '/configuracion/turnos', icon: ListOrdered }, { title: 'Reglas de audiencia', path: '/configuracion/reglas', icon: ShieldCheck }] }
     : group)
   const caseCountQuery = useCases('', 1)
   const caseQuery = useCases(search.trim(), 1, searchOpen)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
-  const title = navigationGroups.flatMap((group) => group.items).find((item) => item.path === location.pathname)?.title ?? (location.pathname.startsWith('/configuracion/turnos') ? 'Propuestas de turnos' : location.pathname.startsWith('/simulaciones/') ? 'Práctica de audiencia' : 'Detalle de expediente')
+  const title = navigationGroups.flatMap((group) => group.items).find((item) => item.path === location.pathname)?.title ?? (location.pathname.startsWith('/configuracion/reglas') ? 'Reglas de audiencia' : location.pathname.startsWith('/configuracion/turnos') ? 'Propuestas de turnos' : location.pathname.startsWith('/simulaciones/') ? 'Práctica de audiencia' : 'Detalle de expediente')
   const displayName = user?.name ?? profile.name
   const initials = displayName.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase()
   const caseResults = (caseQuery.data?.data ?? []).map((item) => ({

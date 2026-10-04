@@ -72,4 +72,4 @@ Revocación: `motivo` no vacío hasta 2.000 caracteres; respuesta `200` con el r
 
 Verificación del 4 de octubre de 2026: suite completa de la rama, 160 pruebas y 973 aserciones aprobadas. En la carpeta habitual, API, servicios de revisión/versiones y diagnóstico del orquestador: 89 pruebas y 480 aserciones aprobadas. Todas se ejecutaron exclusivamente en `jurissim_pruebas`; Pint correcto, diez rutas registradas y copias de los archivos propios verificadas por SHA-256. No se concedieron habilitaciones reales, emitieron decisiones reales, ejecutaron migraciones nuevas ni contactaron modelos externos.
 
-No hay comandos de migración nuevos. Siguiente fase: interfaz administrativa para estas operaciones, con evidencias, precondición y confirmación explícitas; sin habilitaciones ficticias ni activación implícita.
+No hay comandos de migración nuevos. La interfaz administrativa de estas operaciones se documenta en [la fase frontend](17-interfaz-revision-reglas.md), con evidencias, precondición y confirmación explícitas; sin habilitaciones ficticias ni activación implícita.

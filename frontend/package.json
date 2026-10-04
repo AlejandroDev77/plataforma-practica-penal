@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test:reglas": "node --test tests/reglas.test.mjs",
+    "test:reglas-ui": "node tests/reglas-ui.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
