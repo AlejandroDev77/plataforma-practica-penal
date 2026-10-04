@@ -59,3 +59,5 @@ No hay auditoría integral WCAG, lector de pantalla, carga concurrente ni Core W
 ## Siguiente fase
 
 Vincular nuevas prácticas a la activación exacta y revalidar sus dependencias dentro de cada mutación del orquestador. La aprobación y activación no sustituyen una revisión profesional del procedimiento boliviano. No se concedió autoridad jurídica a una cuenta por criterio automático.
+
+El primer hito interno de esa vinculación se documenta en [23-vinculacion-interna-practicas.md](23-vinculacion-interna-practicas.md): creación nueva, copia exacta y diagnóstico privado. Los comandos del motor y la creación pública todavía no están integrados.
