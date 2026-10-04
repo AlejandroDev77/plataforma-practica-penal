@@ -56,3 +56,5 @@ No se requiere instalación de dependencias ni ejecución de migraciones. Las ca
 ## Siguiente paso
 
 Exponer la activación administrativa y su retiro como decisiones separadas, sobre una revisión jurídica vigente y exacta. Después vincular nuevas prácticas a esa activación y revalidar sus dependencias en cada mutación del orquestador. La preparación y aprobación no habilitan por sí solas la ejecución de turnos.
+
+La exposición administrativa se implementa en [22-activacion-administrativa-reglas.md](22-activacion-administrativa-reglas.md), conservando la vinculación y ejecución como fase posterior.

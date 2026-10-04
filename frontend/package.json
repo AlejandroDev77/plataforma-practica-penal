@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test:reglas": "node --test tests/reglas.test.mjs",
+    "test:reglas": "node --test tests/reglas.test.mjs tests/activacion-reglas.test.mjs",
     "test:reglas-ui": "node tests/reglas-ui.mjs",
     "preview": "vite preview"
   },

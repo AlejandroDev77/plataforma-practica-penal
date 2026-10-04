@@ -3,16 +3,21 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\V1\ActivacionReglasAudienciaResource;
 use App\Http\Resources\Api\V1\BorradorInstruccionesResource;
 use App\Http\Resources\Api\V1\HabilitacionRevisionJuridicaResource;
 use App\Http\Resources\Api\V1\RevisionReglasAudienciaResource;
 use App\Http\Resources\Api\V1\VersionReglasAudienciaResource;
+use App\Models\ActivacionReglasAudiencia;
 use App\Models\HabilitacionRevisionJuridica;
 use App\Models\RevisionReglasAudiencia;
+use App\Models\TipoAudiencia;
 use App\Models\User;
 use App\Models\VersionReglasAudiencia;
 use App\Services\Simulaciones\CapturarBorradorReglas;
+use App\Services\Simulaciones\GestionarActivacionReglas;
 use App\Services\Simulaciones\GestionarRevisionJuridicaReglas;
+use App\Services\Simulaciones\PrepararActivacionAdministrativa;
 use App\Services\Simulaciones\SellarVersionReglasAudiencia;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
@@ -180,6 +185,45 @@ final class GobiernoReglasAudienciaController extends Controller
         $gestor->revocarRevision($request->user(), $registro->getKey(), $datos['motivo']);
 
         return response()->json(['data' => (new RevisionReglasAudienciaResource($registro))->resolve($request)]);
+    }
+
+    public function prepararActivacion(Request $request, int $version, PrepararActivacionAdministrativa $preparacion): JsonResponse
+    {
+        abort_unless($this->esAdministrador($request), 403);
+
+        return response()->json(['data' => $preparacion->ejecutar($request->user(), $version)]);
+    }
+
+    public function indexActivaciones(Request $request, int $tipo): JsonResponse
+    {
+        abort_unless($this->esAdministrador($request), 403);
+        TipoAudiencia::query()->findOrFail($tipo);
+        $filtros = $this->filtros($request);
+
+        return $this->pagina($request, ActivacionReglasAudiencia::query()->where('id_tipo_audiencia', $tipo)
+            ->orderByDesc('id_activacion'), ActivacionReglasAudienciaResource::class, $filtros);
+    }
+
+    public function storeActivacion(Request $request, int $version, GestionarActivacionReglas $gestor): JsonResponse
+    {
+        abort_unless($this->esAdministrador($request), 403);
+        $registro = $gestor->activar($request->user(), $version,
+            $request->only(['motivo', 'confirmacion_humana', 'huella_version_esperada', 'id_revision_esperada', 'id_activacion_previa']));
+
+        return response()->json(['data' => (new ActivacionReglasAudienciaResource($registro))->resolve($request)], 201);
+    }
+
+    public function revokeActivacion(Request $request, int $activacion, GestionarActivacionReglas $gestor): JsonResponse
+    {
+        abort_unless($this->esAdministrador($request), 403);
+        $datos = $request->validate([
+            'motivo' => ['required', 'string', 'max:2000'],
+            'confirmacion_humana' => ['required', fn ($campo, $valor, $fallar) => $valor === true ?: $fallar('Confirme expresamente el retiro.')],
+        ]);
+        $gestor->retirar($request->user(), $activacion, $datos['motivo']);
+        $registro = ActivacionReglasAudiencia::query()->findOrFail($activacion);
+
+        return response()->json(['data' => (new ActivacionReglasAudienciaResource($registro))->resolve($request)]);
     }
 
     private function esAdministrador(Request $request): bool

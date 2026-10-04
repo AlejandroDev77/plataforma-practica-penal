@@ -24,16 +24,28 @@ const v = { id: 1, id_tipo_audiencia: 1, id_usuario_autor: 1, numero_version: 1,
   contenido: { formato: 1, tipo: { nombre: tipo.name, activo: true, descripcion: null }, etapas: [{ id_etapa: 1, nombre: 'Etapa sintética', orden: 1, activo: true }], transiciones: [], turnos_catalogo_referencia: [],
     propuestas: [{ id_propuesta_turno: 1, id_etapa: 1, id_usuario_creador: 1, orden: 1, rol: 'juez', acto_propuesto: 'Actuación sintética para revisión', descripcion_propuesta: 'Este contenido no configura ningún procedimiento ni pretende describir una actuación jurídica real. '.repeat(5), referencia_normativa_propuesta: 'Referencia sintética pendiente de revisión.', observaciones: null }] } }
 function pagina(data, page = 1, last = 1, total = data.length) { return { data, meta: { current_page: page, last_page: last, total, per_page: 20 } } }
-async function escenario({ admin = false, habilitada = true, vacio = false, error = null, conflicto = false, sinSesion = false, estado = 'no_acreditada', largo = false, contrato = false, preparacionInvalida = false, falloPreparacion = null } = {}) {
+async function escenario({ admin = false, habilitada = true, vacio = false, error = null, conflicto = false, sinSesion = false, estado = 'no_acreditada', largo = false, contrato = false, preparacionInvalida = false, falloPreparacion = null, activable = false, estadoActivacion = 'sin_activacion', falloActivacion = null } = {}) {
   const contexto = await navegador.newContext({ viewport: { width: 1365, height: 950 } })
   const paginaUI = await contexto.newPage()
   const enviados = []
   const preparaciones = []
+  const consultasActivacion = []
+  let accesoActivacion = !falloActivacion
+  let activaciones = estadoActivacion === 'sin_activacion' ? [] : [{
+    id: 5, id_tipo_audiencia: 1, id_version_reglas: 1, id_revision_reglas: 4, id_usuario_responsable: 2,
+    huella_version: 'b'.repeat(64), id_activacion_previa: null, motivo: 'Registro sintético, sin efecto jurídico. ' + (largo ? 'Motivo largo de prueba. '.repeat(70) : ''),
+    fecha_creacion: futura(-1), revocacion: estadoActivacion === 'retirada' ? { id: 1, id_usuario_responsable: 2, motivo: 'Retiro sintético.', fecha_creacion: futura(-0.5) } : null,
+    execution_authorized: false, requires_simulation_binding: true,
+  }]
   let accesoHabilitacion = true
   let historial = []
   let actual = structuredClone(v)
   actual.revision_juridica.legal_review_status = estado
   actual.precondicion_revision.estado_revision_esperado = estado
+  if (activable || estadoActivacion !== 'sin_activacion') {
+    actual.revision_juridica = { ...actual.revision_juridica, legal_review_status: 'aprobado', review_approved: true }
+    actual.precondicion_revision = { ...actual.precondicion_revision, estado_revision_esperado: 'aprobado', id_ultima_revision_esperada: 4 }
+  }
   if (estado === 'revision_revocada') {
     actual.precondicion_revision.id_ultima_revision_esperada = 1
     historial = [{ id: 1, id_version_reglas: 1, id_usuario_revisor: 2, id_habilitacion: 1,
@@ -81,6 +93,22 @@ async function escenario({ admin = false, habilitada = true, vacio = false, erro
       enviados.push({ path, body })
       await new Promise(r => setTimeout(r, 300))
       if (conflicto) return responder({ code: 'reglas_conflicto', message: 'Conflicto sintético' }, 409)
+      if (path.endsWith('/versiones/1/activaciones')) {
+        const anterior = activaciones[0]?.id ?? null
+        const nuevo = { id: (anterior ?? 4) + 1, id_tipo_audiencia: 1, id_version_reglas: 1, id_revision_reglas: 4, id_usuario_responsable: 2,
+          huella_version: 'b'.repeat(64), id_activacion_previa: anterior, motivo: body.motivo, fecha_creacion: nuevaFecha(), revocacion: null,
+          execution_authorized: false, requires_simulation_binding: true }
+        activaciones = [nuevo, ...activaciones]; estadoActivacion = 'vigente'; activable = false
+        return responder({ data: nuevo }, 201)
+      }
+      if (path.startsWith('/api/v1/reglas-audiencia/activaciones/') && path.endsWith('/revocaciones')) {
+        const id = Number(path.split('/').at(-2))
+        const registro = activaciones.find(a => a.id === id)
+        assert.ok(registro, 'Retiro del registro consultado')
+        registro.revocacion = { id: 1, id_usuario_responsable: 2, motivo: body.motivo, fecha_creacion: nuevaFecha() }
+        if (activaciones[0].id === id) estadoActivacion = 'retirada'
+        return responder({ data: registro })
+      }
       if (path.endsWith('/revisiones')) {
         const revision = { id: 1, id_version_reglas: 1, id_usuario_revisor: 2, id_habilitacion: 1, alcance_revisado: h.alcance, ...body, fecha_creacion: nuevaFecha(), revocacion: null, execution_authorized: false }
         historial = [revision]
@@ -102,6 +130,21 @@ async function escenario({ admin = false, habilitada = true, vacio = false, erro
       errores.push('POST no previsto: ' + path); return ruta.abort()
     }
     if (error && path.endsWith('/versiones')) return responder({ message: 'Error sintético' }, error)
+    if (path.endsWith('/versiones/1/preparacion-activacion')) {
+      consultasActivacion.push(path)
+      if (!accesoActivacion) return responder({ message: 'Fallo sintético' }, falloActivacion)
+      const ultima = activaciones[0]
+      return responder({ data: {
+        id_version_reglas: 1, id_tipo_audiencia: 1, puede_solicitar_activacion: activable,
+        bloqueos: activable ? [] : ultima ? ['revision_ya_utilizada'] : ['revision_juridica_no_vigente', 'instrucciones_no_compatibles'],
+        precondicion: { huella_version_esperada: 'b'.repeat(64), id_revision_esperada: activable || ultima ? 4 : null, id_activacion_previa: ultima?.id ?? null },
+        activacion_actual: { activation_id: ultima?.id ?? null, version_id: ultima?.id_version_reglas ?? null, review_id: ultima?.id_revision_reglas ?? null,
+          huella_version: ultima?.huella_version ?? null, activation_status: estadoActivacion, activation_current: estadoActivacion === 'vigente',
+          read_only: true, execution_authorized: false, requires_simulation_binding: true },
+        read_only: true, execution_authorized: false, requires_simulation_binding: true,
+      } })
+    }
+    if (path.endsWith('/tipos/1/activaciones')) return responder(pagina(activaciones))
     if (path.endsWith('/tipos/1/preparacion-instrucciones')) {
       preparaciones.push(path)
       if (falloPreparacion && preparaciones.length === 1) return responder({ message: 'Error sintético' }, falloPreparacion)
@@ -120,7 +163,7 @@ async function escenario({ admin = false, habilitada = true, vacio = false, erro
     if (path === '/api/v1/logout') return responder({})
     errores.push('API no prevista: ' + path); return ruta.abort()
   })
-  return { contexto, p: paginaUI, enviados, preparaciones, denegarHabilitacion: () => { accesoHabilitacion = false } }
+  return { contexto, p: paginaUI, enviados, preparaciones, consultasActivacion, permitirConsultaActivacion: () => { accesoActivacion = true }, denegarHabilitacion: () => { accesoHabilitacion = false } }
 }
 function nuevaFecha() { return new Date().toISOString() }
 async function prueba(nombre, opciones, realizar) {
@@ -158,6 +201,116 @@ async function completarRevision(p) {
   await p.getByRole('checkbox', { name: /Confirmación de la revisión/ }).check()
 }
 try {
+  await prueba('activación administrativa explícita con precondiciones, doble envío y sin turnos', { admin: true, activable: true, contrato: true }, async ({ p, enviados }) => {
+    await p.goto(url + '/configuracion/reglas/versiones/1')
+    await p.getByRole('button', { name: 'Preparar activación', exact: true }).click()
+    await p.getByRole('button', { name: 'Registrar activación', exact: true }).click()
+    await p.getByRole('alert').filter({ hasText: 'Revise los campos' }).waitFor()
+    assert.equal(enviados.length, 0)
+    await p.getByRole('textbox', { name: 'Motivo de la activación', exact: false }).fill('Activación exclusivamente sintética.')
+    await p.getByRole('checkbox', { name: /Confirmación de la activación/ }).check()
+    await p.getByRole('textbox', { name: /Motivo de la activación/ }).fill('Motivo sintético revisado.')
+    assert.equal(await p.getByRole('checkbox', { name: /Confirmación de la activación/ }).isChecked(), false)
+    await p.getByRole('checkbox', { name: /Confirmación de la activación/ }).check()
+    await p.getByRole('button', { name: 'Registrar activación', exact: true }).click()
+    await p.keyboard.press('Escape')
+    assert.equal(await p.getByRole('dialog').count(), 1, 'No cerrar durante escritura')
+    await p.locator('dialog form').evaluate(f => f.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })))
+    await p.getByRole('status').filter({ hasText: 'La activación administrativa quedó registrada' }).waitFor()
+    await p.getByText('Activación administrativa vigente', { exact: true }).waitFor()
+    assert.deepEqual(enviados[0].body, { motivo: 'Motivo sintético revisado.', confirmacion_humana: true,
+      huella_version_esperada: 'b'.repeat(64), id_revision_esperada: 4, id_activacion_previa: null })
+    assert.equal(enviados.length, 1)
+    await p.getByRole('region', { name: 'Activación administrativa', exact: true }).screenshot({ path: resolve(salida, 'activacion-escritorio.png') })
+    assert.equal(await p.getByRole('button', { name: 'Preparar activación', exact: true }).count(), 0)
+  })
+  await prueba('conflicto de activación conserva motivo y obliga a cerrar y consultar', { admin: true, activable: true, contrato: true, conflicto: true }, async ({ p, enviados }) => {
+    await p.goto(url + '/configuracion/reglas/versiones/1')
+    await p.getByRole('button', { name: 'Preparar activación', exact: true }).click()
+    await p.getByRole('textbox', { name: /Motivo de la activación/ }).fill('Motivo sintético.')
+    await p.getByRole('checkbox', { name: /Confirmación de la activación/ }).check()
+    await p.getByRole('button', { name: 'Registrar activación', exact: true }).click()
+    await p.getByRole('alert').filter({ hasText: 'El registro cambió' }).waitFor()
+    assert.equal(await p.getByRole('textbox', { name: /Motivo de la activación/ }).inputValue(), 'Motivo sintético.')
+    assert.equal(await p.getByRole('button', { name: 'Registrar activación', exact: true }).isDisabled(), true)
+    assert.equal(enviados.length, 1)
+    await p.keyboard.press('Escape')
+    await p.getByRole('dialog').waitFor({ state: 'hidden' })
+    await p.waitForFunction(() => document.activeElement?.getAttribute('aria-labelledby') === 'activacion-administrativa')
+  })
+  await prueba('retiro de activación confirma el registro exacto y conserva historial', { admin: true, estadoActivacion: 'vigente' }, async ({ p, enviados }) => {
+    await p.goto(url + '/configuracion/reglas/versiones/1')
+    await p.getByText('Historial de activaciones de este tipo', { exact: true }).click()
+    await p.getByRole('button', { name: 'Retirar registro #5', exact: true }).click()
+    await p.getByRole('textbox', { name: /Motivo del retiro/ }).fill('Retiro sintético.')
+    await p.getByRole('button', { name: 'Confirmar retiro', exact: true }).click()
+    await p.getByRole('alert').filter({ hasText: 'Revise los campos' }).waitFor()
+    assert.equal(enviados.length, 0)
+    await p.getByRole('checkbox', { name: /Confirmación del retiro/ }).check()
+    await p.getByRole('button', { name: 'Confirmar retiro', exact: true }).click()
+    await p.getByRole('status').filter({ hasText: 'El retiro quedó registrado' }).waitFor()
+    await p.getByText('Activación retirada', { exact: true }).waitFor()
+    assert.equal(enviados[0].path, '/api/v1/reglas-audiencia/activaciones/5/revocaciones')
+    assert.equal(enviados[0].body.confirmacion_humana, true)
+    await p.getByText('Retiro sintético.', { exact: true }).waitFor()
+    assert.equal(await p.getByRole('button', { name: 'Retirar registro #5', exact: true }).count(), 0)
+    await p.getByRole('region', { name: 'Activación administrativa', exact: true }).screenshot({ path: resolve(salida, 'retiro-escritorio.png') })
+  })
+  await prueba('revisor no consulta ni administra activaciones', {}, async ({ p, enviados, consultasActivacion }) => {
+    await p.goto(url + '/revision-reglas/versiones/1')
+    await p.getByRole('heading', { name: 'Versión 1', exact: true }).waitFor()
+    assert.equal(await p.getByRole('region', { name: 'Activación administrativa', exact: true }).count(), 0)
+    assert.equal(consultasActivacion.length, 0)
+    assert.equal(enviados.length, 0)
+  })
+  await prueba('consulta fallida se recupera explícitamente sin activación automática', { admin: true, activable: true, contrato: true, falloActivacion: 503 }, async ({ p, enviados, consultasActivacion, permitirConsultaActivacion }) => {
+    await p.goto(url + '/configuracion/reglas/versiones/1')
+    const region = p.getByRole('region', { name: 'Activación administrativa', exact: true })
+    await region.getByRole('alert').waitFor()
+    assert.equal(await region.getByRole('button', { name: 'Preparar activación', exact: true }).count(), 0)
+    const antes = consultasActivacion.length
+    permitirConsultaActivacion()
+    await region.getByRole('button', { name: 'Volver a consultar', exact: true }).click()
+    await region.getByRole('button', { name: 'Preparar activación', exact: true }).waitFor()
+    assert.equal(consultasActivacion.length, antes + 1)
+    assert.equal(enviados.length, 0)
+  })
+  await prueba('copia histórica muestra motivo y no ofrece activación', { admin: true }, async ({ p, enviados }) => {
+    await p.goto(url + '/configuracion/reglas/versiones/1')
+    await p.getByText('Selle una copia con instrucciones completas y compatibles.', { exact: true }).waitFor()
+    assert.equal(await p.getByRole('button', { name: 'Preparar activación', exact: true }).count(), 0)
+    assert.equal(enviados.length, 0)
+  })
+  await prueba('activación móvil, teclado, foco, texto largo y reflujo', { admin: true, activable: true, contrato: true, largo: true }, async ({ p, enviados }) => {
+    await p.goto(url + '/configuracion/reglas/versiones/1')
+    await p.getByRole('button', { name: 'Preparar activación', exact: true }).focus()
+    await p.keyboard.press('Enter')
+    await p.getByRole('dialog').waitFor()
+    for (const width of [320, 390, 768, 1365]) {
+      await p.setViewportSize({ width, height: 900 })
+      assert.equal(await p.locator('dialog').evaluate(e => e.scrollWidth <= e.clientWidth + 1), true, 'Dialogo a ' + width)
+    }
+    await p.setViewportSize({ width: 390, height: 844 })
+    await p.getByRole('textbox', { name: /Motivo de la activación/ }).fill('Motivo sintético largo. '.repeat(50))
+    await p.getByRole('checkbox', { name: /Confirmación de la activación/ }).focus()
+    await p.keyboard.press('Space')
+    assert.equal(await p.getByRole('checkbox', { name: /Confirmación de la activación/ }).isChecked(), true)
+    await p.screenshot({ path: resolve(salida, 'confirmacion-activacion-movil.png') })
+    await p.keyboard.press('Escape')
+    await p.getByRole('dialog').waitFor({ state: 'hidden' })
+    await p.waitForFunction(() => document.activeElement?.getAttribute('aria-labelledby') === 'activacion-administrativa')
+    await p.getByRole('region', { name: 'Activación administrativa', exact: true }).screenshot({ path: resolve(salida, 'activacion-movil.png') })
+    await p.addStyleTag({ content: ':root { font-size: 28px !important; }' })
+    assert.equal(await p.getByRole('region', { name: 'Activación administrativa', exact: true }).evaluate(e => e.scrollWidth <= e.clientWidth + 1), true, 'Panel móvil al 200%')
+    await p.getByRole('button', { name: 'Preparar activación', exact: true }).click()
+    assert.equal(await p.locator('dialog').evaluate(e => e.scrollWidth <= e.clientWidth + 1), true, 'Confirmación móvil al 200%')
+    await p.keyboard.press('Escape')
+    await p.getByRole('dialog').waitFor({ state: 'hidden' })
+    await p.setViewportSize({ width: 1365, height: 950 })
+    assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true)
+    await p.emulateMedia({ reducedMotion: 'reduce' })
+    assert.equal(enviados.length, 0)
+  })
   await prueba('preparación administrativa: instrucciones vacías, pasos y sellado exacto sin activación', { admin: true }, async ({ p, enviados, preparaciones }) => {
     await p.goto(url + '/configuracion/reglas')
     await p.getByRole('button', { name: 'Preparar instrucciones', exact: true }).click()

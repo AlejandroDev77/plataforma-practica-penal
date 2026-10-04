@@ -58,6 +58,8 @@ Route::prefix('v1')->group(function (): void {
             Route::get('/versiones', [GobiernoReglasAudienciaController::class, 'index']);
             Route::get('/versiones/{version}', [GobiernoReglasAudienciaController::class, 'show'])->whereNumber('version');
             Route::get('/versiones/{version}/revisiones', [GobiernoReglasAudienciaController::class, 'indexRevisiones'])->whereNumber('version');
+            Route::get('/versiones/{version}/preparacion-activacion', [GobiernoReglasAudienciaController::class, 'prepararActivacion'])->whereNumber('version')->middleware('throttle:10,1');
+            Route::get('/tipos/{tipo}/activaciones', [GobiernoReglasAudienciaController::class, 'indexActivaciones'])->whereNumber('tipo');
             Route::get('/habilitaciones', [GobiernoReglasAudienciaController::class, 'indexHabilitaciones']);
             Route::get('/habilitaciones/{habilitacion}', [GobiernoReglasAudienciaController::class, 'showHabilitacion'])->whereNumber('habilitacion');
             Route::middleware('throttle:10,1')->group(function (): void {
@@ -66,6 +68,8 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('/habilitaciones/{habilitacion}/revocaciones', [GobiernoReglasAudienciaController::class, 'revokeHabilitacion'])->whereNumber('habilitacion');
                 Route::post('/versiones/{version}/revisiones', [GobiernoReglasAudienciaController::class, 'storeRevision'])->whereNumber('version');
                 Route::post('/revisiones/{revision}/revocaciones', [GobiernoReglasAudienciaController::class, 'revokeRevision'])->whereNumber('revision');
+                Route::post('/versiones/{version}/activaciones', [GobiernoReglasAudienciaController::class, 'storeActivacion'])->whereNumber('version');
+                Route::post('/activaciones/{activacion}/revocaciones', [GobiernoReglasAudienciaController::class, 'revokeActivacion'])->whereNumber('activacion');
             });
         });
         Route::get('/administracion/propuestas-turnos', [PropuestaTurnoAudienciaController::class, 'index']);

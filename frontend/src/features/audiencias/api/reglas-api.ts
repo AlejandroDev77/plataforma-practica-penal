@@ -1,4 +1,5 @@
 import { httpClient } from '../../../shared/api/http-client'
+import { registroActivacion, validarPreparacionActivacion, type ActivacionReglas, type SolicitudActivacion } from '../model/activacion-reglas'
 import { validarBorradorInstrucciones, type BorradorInstrucciones, type DatosSelladoInstrucciones, type DatosHabilitacion, type DatosRevision, type Habilitacion, type Pagina, type RevisionReglas, type VersionReglas } from '../model/reglas'
 
 const base = '/api/v1/reglas-audiencia'
@@ -42,4 +43,20 @@ export async function registrarRevision(id: number, datos: DatosRevision): Promi
 }
 export async function retirarRegistro(tipo: 'habilitaciones' | 'revisiones', id: number, motivo: string): Promise<void> {
   await httpClient.post(`${base}/${tipo}/${id}/revocaciones`, { motivo })
+}
+export async function consultarPreparacionActivacion(version: VersionReglas, signal?: AbortSignal) {
+  const respuesta = await httpClient.get<{ data: unknown }>(`${base}/versiones/${version.id}/preparacion-activacion`, { signal })
+  return validarPreparacionActivacion(respuesta.data.data, version.id, version.id_tipo_audiencia, version.huella_contenido)
+}
+export async function listarActivaciones(tipo: number, page: number, signal?: AbortSignal): Promise<Pagina<ActivacionReglas>> {
+  const resultado = await pagina<unknown>(`/tipos/${tipo}/activaciones`, { page }, signal)
+  const data = resultado.data.map(a => registroActivacion.parse(a))
+  if (data.some(a => a.id_tipo_audiencia !== tipo)) throw new Error('No recibimos el historial de esta audiencia.')
+  return { ...resultado, data }
+}
+export async function activarVersion(version: number, datos: SolicitudActivacion): Promise<void> {
+  await httpClient.post(`${base}/versiones/${version}/activaciones`, datos)
+}
+export async function retirarActivacion(id: number, datos: { motivo: string; confirmacion_humana: true }): Promise<void> {
+  await httpClient.post(`${base}/activaciones/${id}/revocaciones`, datos)
 }
