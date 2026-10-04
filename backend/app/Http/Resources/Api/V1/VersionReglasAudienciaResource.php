@@ -3,9 +3,12 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Services\Simulaciones\ConsultarRevisionJuridicaReglas;
+use App\Services\Simulaciones\ContratoEjecucionReglas;
+use DomainException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 
 final class VersionReglasAudienciaResource extends JsonResource
 {
@@ -36,6 +39,18 @@ final class VersionReglasAudienciaResource extends JsonResource
             ];
             foreach ($campos as $coleccion => $permitidos) {
                 $datos['contenido'][$coleccion] = array_map(fn ($fila) => Arr::only($fila, $permitidos), $contenido[$coleccion]);
+            }
+            $datos['revision_instrucciones'] = ['estado' => 'ausente', 'requiere_confirmacion' => false];
+            if (array_key_exists('contrato_ejecucion', $contenido)) {
+                $datos['revision_instrucciones'] = ['estado' => 'incompatible', 'requiere_confirmacion' => true];
+                try {
+                    app(ContratoEjecucionReglas::class)->exigir($contenido, $this->id_tipo_audiencia);
+                    // Solo el contrato exacto reconocido; nunca ocultar filas invalidas para aparentar una lectura completa.
+                    $datos['contenido']['contrato_ejecucion'] = $contenido['contrato_ejecucion'];
+                    $datos['revision_instrucciones']['estado'] = 'disponible';
+                } catch (DomainException|ValidationException) {
+                    // La copia sigue consultable, pero no se presenta como instrucciones revisables.
+                }
             }
         }
 

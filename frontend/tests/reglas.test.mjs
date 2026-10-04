@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { datosHabilitacion, datosRetiro, datosSellado, hoyBolivia, huellaArchivo, puedeRevisar, prepararRevision } from '../src/features/audiencias/model/reglas.ts'
+import { consultarInstrucciones, datosHabilitacion, datosRetiro, datosSellado, hoyBolivia, huellaArchivo, puedeRevisar, prepararRevision } from '../src/features/audiencias/model/reglas.ts'
 
 const futura = dias => new Date(Date.now() + dias * 86400000).toISOString()
 const hab = () => ({ id: 1, id_usuario_revisor: 2, id_usuario_habilitador: 1, id_tipo_audiencia: 1, alcance: 'Ámbito sintético.', estado: 'vigente', revocacion: null, acreditacion_verificada: true, fecha_vencimiento: futura(3) })
@@ -78,4 +78,74 @@ test('huella local corresponde exactamente a los bytes; ningún upload ni API', 
 })
 test('huella rechaza archivos superiores a 20 MB antes de leer bytes', async () => {
   await assert.rejects(() => huellaArchivo({ size: 20 * 1024 * 1024 + 1, arrayBuffer() { throw new Error('No debe leer') } }), /20 MB/)
+})
+
+const versionInstrucciones = () => ({ ...version(), huella_contenido: 'a'.repeat(64),
+  revision_instrucciones: { estado: 'disponible', requiere_confirmacion: true },
+  contenido: { formato: 1, etapas: [{ id_etapa: 1 }],
+    propuestas: [{ id_propuesta_turno: 1, id_usuario_creador: 1, id_etapa: 1, orden: 1, rol: 'juez', acto_propuesto: 'Acto sintético.', descripcion_propuesta: 'Solo pruebas.' }],
+    contrato_ejecucion: { formato: 1, perfil: 'mvp-defensa-aciclico-ejecucion-v1', rol_usuario: 'abogado_defensor',
+      instrucciones: [{ id_propuesta_turno: 1, texto: '  Instrucción sintética.\nTexto exacto.  ' }] } } })
+
+test('contrato conserva espacios, saltos y Unicode completos, sin transformar instrucciones', () => {
+  const v = versionInstrucciones()
+  const antes = structuredClone(v)
+  assert.equal(consultarInstrucciones(v).contrato.instrucciones[0].texto, v.contenido.contrato_ejecucion.instrucciones[0].texto)
+  assert.deepEqual(v, antes)
+  v.contenido.contrato_ejecucion.instrucciones[0].texto = '🧑'.repeat(5000)
+  assert.equal(consultarInstrucciones(v).estado, 'disponible')
+  v.contenido.contrato_ejecucion.instrucciones[0].texto += 'a'
+  assert.equal(consultarInstrucciones(v).estado, 'incompatible')
+})
+
+test('lectura incompleta, perfil desconocido, huella o asociación incorrecta bloquean revisión', () => {
+  const mutar = [
+    v => { delete v.contenido.contrato_ejecucion },
+    v => { delete v.revision_instrucciones },
+    v => { v.revision_instrucciones.estado = 'incompatible' },
+    v => { v.contenido.contrato_ejecucion.perfil = 'desconocido' },
+    v => { v.contenido.contrato_ejecucion.extra = true },
+    v => { v.contenido.contrato_ejecucion.instrucciones = [] },
+    v => { v.contenido.contrato_ejecucion.instrucciones[0].id_propuesta_turno = '1' },
+    v => { v.contenido.contrato_ejecucion.instrucciones[0].id_propuesta_turno = 2 },
+    v => { v.contenido.contrato_ejecucion.instrucciones[0].texto = '\u00a0\u0085' },
+    v => { v.contenido.contrato_ejecucion.instrucciones.push(v.contenido.contrato_ejecucion.instrucciones[0]) },
+    v => { v.precondicion_revision.huella_version_esperada = 'f'.repeat(64) },
+    v => { v.contenido.propuestas[0].rol = 'imputado' },
+    v => { v.contenido.etapas = [] },
+  ]
+  for (const cambiar of mutar) {
+    const v = versionInstrucciones()
+    cambiar(v)
+    assert.equal(consultarInstrucciones(v).estado, 'incompatible')
+    assert.equal(puedeRevisar(v, hab(), 2), false)
+    assert.throws(() => prepararRevision({ ...datos(), confirmacion_instrucciones: true }, v, hab(), 2))
+  }
+})
+
+test('las dos confirmaciones son independientes y estrictas; la huella procede de la versión', () => {
+  const v = versionInstrucciones()
+  for (const confirmacion_instrucciones of [undefined, false, 1, 'true']) assert.throws(() => prepararRevision({ ...datos(), confirmacion_instrucciones }, v, hab(), 2))
+  assert.throws(() => prepararRevision({ ...datos(), confirmacion_humana: false, confirmacion_instrucciones: true }, v, hab(), 2))
+  const r = prepararRevision({ ...datos(), confirmacion_instrucciones: true, huella_ejecucion_revisada: 'f'.repeat(64), contrato_ejecucion: { falsificado: true } }, v, hab(), 2)
+  assert.equal(r.huella_ejecucion_revisada, v.huella_contenido)
+  assert.equal(r.confirmacion_instrucciones, true)
+  assert.equal(r.contrato_ejecucion, undefined)
+  assert.equal(r.execution_authorized, undefined)
+})
+
+test('una copia histórica no transmite cobertura inventada ni confirma instrucciones nuevas', () => {
+  const v = version()
+  assert.equal(consultarInstrucciones(v).estado, 'ausente')
+  const r = prepararRevision({ ...datos(), confirmacion_instrucciones: true, huella_ejecucion_revisada: 'a'.repeat(64) }, v, hab(), 2)
+  assert.equal(r.confirmacion_instrucciones, undefined)
+  assert.equal(r.huella_ejecucion_revisada, undefined)
+})
+
+test('requiere cambios sobre instrucciones conserva cobertura, sin vencimiento ni activación', () => {
+  const v = versionInstrucciones()
+  const r = prepararRevision({ ...datos(), decision: 'requiere_cambios', confirmacion_instrucciones: true }, v, hab(), 2)
+  assert.equal(r.fecha_vencimiento, null)
+  assert.equal(r.huella_ejecucion_revisada, v.huella_contenido)
+  assert.equal(r.confirmacion_instrucciones, true)
 })

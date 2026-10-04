@@ -58,6 +58,12 @@
 .reglas-propuesta { padding: var(--reglas-inset); border-bottom: 1px solid var(--reglas-line); }
 .reglas-propuesta h3 { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 450; margin-bottom: .75rem; }
 .reglas-propuesta > p:not(.reglas-kicker) { max-width: 75ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reglas-instruccion { border-top: 1px solid var(--reglas-line); padding-top: 1rem; margin-top: var(--reglas-gap); }
+.reglas-instruccion h4 { color: var(--color-ink-700); font-size: .85rem; font-weight: 600; margin-bottom: .5rem; }
+.reglas-instruccion p { max-width: 75ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reglas-cobertura { border-top: 1px solid var(--reglas-line); margin-top: var(--reglas-gap); padding-top: 1rem; }
+.reglas-cobertura > p { color: var(--color-ink-700); font-size: .9rem; line-height: 1.65; }
+.reglas-reading-actions:has(button) { padding: var(--reglas-inset); border-top: 1px solid var(--reglas-line); display: flex; justify-content: flex-end; }
 .reglas-context { padding: 1rem 0 1rem 1rem; border-left: 1px solid var(--reglas-line); position: sticky; top: 1rem; overflow-wrap: anywhere; }
 .reglas-context h2 { font-size: 1rem; margin-bottom: .75rem; font-weight: 600; }
 .reglas-context h2:not(:first-child) { margin-top: 2rem; }

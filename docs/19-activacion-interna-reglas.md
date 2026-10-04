@@ -20,7 +20,7 @@ Una copia que contiene instrucciones exige un quinto parámetro explícito en `G
 
 Una revisión histórica sin contrato no adquiere esa cobertura retrospectivamente. No se edita una versión ni una revisión para añadir instrucciones. Hay que sellar una nueva copia completa y revisarla.
 
-**La API y la interfaz actuales no presentan todavía este contrato para revisión.** No pasan el quinto parámetro: aunque un cliente envíe una huella adicional, no podrán aprobar una copia ejecutable mediante el formulario anterior. Esto se verifica con una prueba HTTP. La próxima fase deberá mostrar todas las instrucciones y obtener una confirmación específica antes de habilitar este flujo público.
+**Al finalizar esta fase, la API y la interfaz aún no presentaban este contrato para revisión.** El formulario anterior no pasaba el quinto parámetro y no podía aprobar instrucciones. La extensión posterior de lectura completa y confirmación específica se documenta en `20-revision-instrucciones-reglas.md`; mantiene la revisión separada de la activación.
 
 La huella es control de integridad, no firma digital ni prueba automática de idoneidad profesional. La acreditación real y la revisión normativa siguen siendo responsabilidad humana.
 

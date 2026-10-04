@@ -124,9 +124,22 @@ final class GobiernoReglasAudienciaController extends Controller
             'id_ultima_revision_esperada' => ['present', 'nullable', 'integer', 'min:1'],
             'estado_revision_esperado' => ['required', 'string'],
         ]);
+        $conInstrucciones = array_key_exists('contrato_ejecucion', $registro->contenido);
+        $cobertura = $request->validate($conInstrucciones ? [
+            'confirmacion_instrucciones' => ['required', function (string $campo, mixed $valor, \Closure $fallar): void {
+                if ($valor !== true) {
+                    $fallar('Confirme expresamente la lectura de todas las instrucciones de esta copia.');
+                }
+            }],
+            'huella_ejecucion_revisada' => ['required', 'string', 'regex:/^[0-9a-f]{64}$/'],
+        ] : [
+            'confirmacion_instrucciones' => ['prohibited'],
+            'huella_ejecucion_revisada' => ['prohibited'],
+        ]);
         $revision = $gestor->registrar($request->user(), $registro->getKey(),
             $request->only(['decision', 'observacion', 'fuentes_verificadas', 'vigencia_comprobada_en', 'confirmacion_humana', 'fecha_vencimiento']),
-            $request->only(['huella_version_esperada', 'id_ultima_revision_esperada', 'estado_revision_esperado']));
+            $request->only(['huella_version_esperada', 'id_ultima_revision_esperada', 'estado_revision_esperado']),
+            $conInstrucciones ? $cobertura['huella_ejecucion_revisada'] : null);
 
         return response()->json(['data' => (new RevisionReglasAudienciaResource($revision))->resolve($request)], 201);
     }

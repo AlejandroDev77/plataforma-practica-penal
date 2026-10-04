@@ -22,6 +22,7 @@ final class RevisionReglasAudienciaResource extends JsonResource
             'fuentes_verificadas' => array_map(fn ($fuente) => Arr::only($fuente, ['referencia', 'huella_contenido']), $this->fuentes_verificadas),
             'vigencia_comprobada_en' => $this->vigencia_comprobada_en->toDateString(),
             'confirmacion_humana' => $this->confirmacion_humana,
+            'huella_ejecucion_revisada' => $this->huella_ejecucion_revisada,
             'fecha_creacion' => $this->fecha_creacion->toIso8601String(),
             'fecha_vencimiento' => $this->fecha_vencimiento?->toIso8601String(),
             'revocacion' => $revocacion ? [

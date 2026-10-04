@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 final class GestionarRevisionJuridicaReglas
 {
@@ -77,7 +78,12 @@ final class GestionarRevisionJuridicaReglas
             $version = VersionReglasAudiencia::query()->findOrFail($idVersion);
             $tieneContrato = array_key_exists('contrato_ejecucion', $version->contenido);
             if ($tieneContrato) {
-                app(ContratoEjecucionReglas::class)->exigir($version->contenido, $version->id_tipo_audiencia);
+                try {
+                    app(ContratoEjecucionReglas::class)->exigir($version->contenido, $version->id_tipo_audiencia);
+                } catch (ValidationException) {
+                    // Es contenido persistido incompatible, no un campo corregible del formulario.
+                    throw new DomainException('La copia no contiene instrucciones completas para revision.');
+                }
                 if ($huellaEjecucionRevisada === null || ! hash_equals($version->huella_contenido, $huellaEjecucionRevisada)) {
                     throw new DomainException('La revision debe confirmar la copia completa con sus instrucciones exactas.');
                 }

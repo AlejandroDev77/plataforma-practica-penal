@@ -91,7 +91,7 @@ class ActivacionReglasAudienciaTest extends TestCase
         $this->assertDatabaseCount('revisiones_reglas_audiencia', 1);
     }
 
-    public function test_api_anterior_no_aprueba_instrucciones_que_no_presenta(): void
+    public function test_api_no_aprueba_instrucciones_sin_confirmacion_especifica(): void
     {
         [$admin, $revisor, $v] = $this->escenario();
         $this->habilitar($admin, $revisor, $v);
@@ -100,7 +100,7 @@ class ActivacionReglasAudienciaTest extends TestCase
             ...$this->datosRevision(), 'huella_version_esperada' => $v->huella_contenido,
             'id_ultima_revision_esperada' => null, 'estado_revision_esperado' => 'no_acreditada',
             'huella_ejecucion_revisada' => $v->huella_contenido,
-        ])->assertStatus(409)->assertJsonPath('code', 'reglas_conflicto');
+        ])->assertUnprocessable()->assertJsonValidationErrors('confirmacion_instrucciones');
         $this->assertDatabaseCount('revisiones_reglas_audiencia', 0);
     }
 

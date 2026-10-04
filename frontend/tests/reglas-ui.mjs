@@ -9,7 +9,7 @@ const cargar = createRequire(import.meta.url)
 const { chromium } = cargar(process.env.JURISSIM_PLAYWRIGHT_PATH || 'playwright')
 const url = process.env.JURISSIM_UI_URL || 'http://127.0.0.1:5177'
 assert.ok(['127.0.0.1', 'localhost'].includes(new URL(url).hostname), 'Solo un frontend local aislado.')
-const salida = resolve('..', 'artifacts', 'revision-reglas')
+const salida = resolve(process.env.JURISSIM_UI_ARTIFACT_DIR || resolve('..', 'artifacts', 'revision-reglas'))
 await mkdir(salida, { recursive: true })
 const navegador = await chromium.launch({ headless: true, executablePath: process.env.JURISSIM_BROWSER_PATH || chromium.executablePath() })
 const errores = []
@@ -24,7 +24,7 @@ const v = { id: 1, id_tipo_audiencia: 1, id_usuario_autor: 1, numero_version: 1,
   contenido: { formato: 1, tipo: { nombre: tipo.name, activo: true, descripcion: null }, etapas: [{ id_etapa: 1, nombre: 'Etapa sintética', orden: 1, activo: true }], transiciones: [], turnos_catalogo_referencia: [],
     propuestas: [{ id_propuesta_turno: 1, id_etapa: 1, id_usuario_creador: 1, orden: 1, rol: 'juez', acto_propuesto: 'Actuación sintética para revisión', descripcion_propuesta: 'Este contenido no configura ningún procedimiento ni pretende describir una actuación jurídica real. '.repeat(5), referencia_normativa_propuesta: 'Referencia sintética pendiente de revisión.', observaciones: null }] } }
 function pagina(data, page = 1, last = 1, total = data.length) { return { data, meta: { current_page: page, last_page: last, total, per_page: 20 } } }
-async function escenario({ admin = false, habilitada = true, vacio = false, error = null, conflicto = false, sinSesion = false, estado = 'no_acreditada', largo = false } = {}) {
+async function escenario({ admin = false, habilitada = true, vacio = false, error = null, conflicto = false, sinSesion = false, estado = 'no_acreditada', largo = false, contrato = false } = {}) {
   const contexto = await navegador.newContext({ viewport: { width: 1365, height: 950 } })
   const paginaUI = await contexto.newPage()
   const enviados = []
@@ -46,6 +46,19 @@ async function escenario({ admin = false, habilitada = true, vacio = false, erro
     actual.motivo = 'Motivo sintético prolongado '.repeat(70)
     actual.contenido.propuestas[0].descripcion_propuesta = 'Una afirmación sintética extensa para comprobar la lectura y la adaptación. '.repeat(150)
     actual.contenido.propuestas[0].referencia_normativa_propuesta = 'https://fuente-sintetica.example/' + 'localizador'.repeat(35)
+  }
+  actual.revision_instrucciones = { estado: 'ausente', requiere_confirmacion: false }
+  if (contrato) {
+    actual.revision_instrucciones = { estado: 'disponible', requiere_confirmacion: true }
+    actual.contenido.contrato_ejecucion = { formato: 1, perfil: 'mvp-defensa-aciclico-ejecucion-v1', rol_usuario: 'abogado_defensor',
+      instrucciones: [{ id_propuesta_turno: 1, texto: '  Instrucción exclusivamente sintética.\n' + 'Lectura exacta para este turno, sin valor jurídico. '.repeat(largo ? 50 : 1)
+        + '\n<script>window.__instruccionInyectada = true</script>\nhttps://sintetica.example/' + 'localizador'.repeat(30) + '  ' }] }
+    if (contrato === 'incompatible') {
+      actual.revision_instrucciones.estado = 'incompatible'
+      delete actual.contenido.contrato_ejecucion
+    }
+    if (contrato === 'incompleto') actual.contenido.contrato_ejecucion.instrucciones = []
+    if (contrato === 'desconocido') actual.contenido.contrato_ejecucion.perfil = 'futuro'
   }
   paginaUI.on('pageerror', e => errores.push(e.message))
   await contexto.route('**/*', async ruta => {
@@ -256,6 +269,86 @@ try {
     await p.locator('.reglas-summary').getByText('Revisión retirada', { exact: true }).waitFor()
     await p.getByRole('region', { name: 'Historial de decisiones' }).getByText('Revisión retirada', { exact: true }).waitFor()
     await p.screenshot({ path: resolve(salida, 'version-escritorio.png'), fullPage: true })
+  })
+  await prueba('instrucciones completas, texto seguro y dos confirmaciones independientes', { contrato: true }, async ({ p, enviados }) => {
+    await p.goto(url + '/revision-reglas/versiones/1')
+    await p.getByRole('heading', { name: 'Propuestas e instrucciones', exact: true }).waitFor()
+    const texto = await p.locator('.reglas-instruccion p').textContent()
+    assert.ok(texto.startsWith('  Instrucción exclusivamente sintética.\n'))
+    assert.ok(texto.endsWith('  '))
+    assert.ok(texto.includes('<script>'))
+    assert.equal(await p.evaluate(() => window.__instruccionInyectada), undefined)
+    await p.getByRole('button', { name: 'Registrar revisión', exact: true }).click()
+    await completarRevision(p)
+    await p.getByRole('button', { name: 'Registrar decisión', exact: true }).click()
+    await p.getByRole('alert').filter({ hasText: 'Revise los campos' }).waitFor()
+    assert.equal(enviados.length, 0)
+    await p.getByRole('checkbox', { name: /Lectura de las instrucciones/ }).check()
+    assert.equal(await p.getByRole('checkbox', { name: /Confirmación de la revisión/ }).isChecked(), false)
+    await p.getByRole('checkbox', { name: /Confirmación de la revisión/ }).check()
+    await p.getByRole('button', { name: 'Registrar decisión', exact: true }).click()
+    await p.getByRole('status').filter({ hasText: 'La decisión quedó registrada' }).waitFor()
+    assert.equal(enviados.length, 1)
+    assert.equal(enviados[0].body.confirmacion_instrucciones, true)
+    assert.equal(enviados[0].body.huella_ejecucion_revisada, v.huella_contenido)
+    assert.equal(enviados[0].body.execution_authorized, undefined)
+    assert.equal(enviados[0].body.contrato_ejecucion, undefined)
+    await p.getByRole('region', { name: 'Historial de decisiones' }).getByText('Fuentes, vigencia y trazabilidad').click()
+    await p.getByText('Incluidas en esta decisión', { exact: true }).waitFor()
+    await p.screenshot({ path: resolve(salida, 'instrucciones-escritorio.png'), fullPage: true })
+  })
+  await prueba('edición restablece ambas confirmaciones y conflicto impide renovar la lectura', { contrato: true, conflicto: true }, async ({ p, enviados }) => {
+    await abrirRevision(p)
+    await completarRevision(p)
+    await p.getByRole('checkbox', { name: /Lectura de las instrucciones/ }).check()
+    await p.getByRole('checkbox', { name: /Confirmación de la revisión/ }).check()
+    await p.getByRole('textbox', { name: /Fundamento y observaciones/ }).fill('Texto sintético cambiado.')
+    assert.equal(await p.getByRole('checkbox', { name: /Lectura de las instrucciones/ }).isChecked(), false)
+    assert.equal(await p.getByRole('checkbox', { name: /Confirmación de la revisión/ }).isChecked(), false)
+    await p.getByRole('checkbox', { name: /Lectura de las instrucciones/ }).check()
+    await p.getByRole('checkbox', { name: /Confirmación de la revisión/ }).check()
+    await p.getByRole('button', { name: 'Registrar decisión', exact: true }).click()
+    await p.getByRole('alert').filter({ hasText: 'El registro cambió' }).waitFor()
+    assert.equal(await p.getByRole('button', { name: 'Registrar decisión', exact: true }).isDisabled(), true)
+    assert.equal(enviados.length, 1)
+    await p.keyboard.press('Escape')
+    await p.getByRole('dialog').waitFor({ state: 'hidden' })
+    await p.waitForFunction(() => document.activeElement?.classList.contains('reglas-back'))
+  })
+  for (const contrato of ['incompatible', 'incompleto', 'desconocido']) {
+    await prueba('contrato ' + contrato + ': lectura parcial no permite revisar', { contrato }, async ({ p, enviados }) => {
+      await p.goto(url + '/revision-reglas/versiones/1')
+      await p.getByRole('alert').filter({ hasText: 'No podemos mostrar un conjunto completo' }).waitFor()
+      assert.equal(await p.getByRole('button', { name: 'Registrar revisión', exact: true }).count(), 0)
+      assert.equal(await p.locator('.reglas-instruccion').count(), 0)
+      assert.equal(enviados.length, 0)
+    })
+  }
+  await prueba('instrucciones largas: reflujo, teclado, móvil y texto al 200%', { contrato: true, largo: true }, async ({ p, enviados }) => {
+    await p.goto(url + '/revision-reglas/versiones/1')
+    await p.getByRole('heading', { name: 'Instrucción del turno', exact: true }).waitFor()
+    for (const width of [320, 390, 768, 1365]) {
+      await p.setViewportSize({ width, height: 950 })
+      assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'Instrucciones a ' + width)
+      assert.equal(await p.locator('.reglas-instruccion p').evaluate(e => e.scrollHeight <= e.clientHeight + 1), true, 'Texto sin recorte')
+    }
+    await p.setViewportSize({ width: 390, height: 844 })
+    await p.screenshot({ path: resolve(salida, 'instrucciones-movil.png'), fullPage: true })
+    await p.getByRole('button', { name: 'Registrar revisión', exact: true }).focus()
+    await p.keyboard.press('Enter')
+    await p.getByRole('dialog').waitFor()
+    await p.getByRole('checkbox', { name: /Lectura de las instrucciones/ }).focus()
+    await p.keyboard.press('Space')
+    assert.equal(await p.getByRole('checkbox', { name: /Lectura de las instrucciones/ }).isChecked(), true)
+    await p.screenshot({ path: resolve(salida, 'confirmacion-instrucciones-movil.png') })
+    await p.keyboard.press('Escape')
+    await p.getByRole('dialog').waitFor({ state: 'hidden' })
+    await p.waitForFunction(() => document.activeElement?.classList.contains('reglas-back'))
+    await p.setViewportSize({ width: 1365, height: 950 })
+    await p.addStyleTag({ content: ':root { font-size: 28px !important; }' })
+    assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, 'Instrucciones con texto 200%')
+    await p.emulateMedia({ reducedMotion: 'reduce' })
+    assert.equal(enviados.length, 0)
   })
   assert.deepEqual(errores, [], 'Sin errores de página ni solicitudes externas o API no previstas.')
   console.log(`${comprobadas.length} escenarios verificados. Capturas: ${salida}`)
