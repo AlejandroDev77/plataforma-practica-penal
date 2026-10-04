@@ -49,7 +49,7 @@ final class GestionarRevisionJuridicaReglas
         });
     }
 
-    public function registrar(User $actor, int $idVersion, array $datos, ?array $precondicion = null): RevisionReglasAudiencia
+    public function registrar(User $actor, int $idVersion, array $datos, ?array $precondicion = null, ?string $huellaEjecucionRevisada = null): RevisionReglasAudiencia
     {
         if ($precondicion !== null) {
             $precondicion = Validator::make($precondicion, [
@@ -73,8 +73,17 @@ final class GestionarRevisionJuridicaReglas
             'fecha_vencimiento' => ['nullable', 'required_if:decision,aprobado', 'prohibited_if:decision,requiere_cambios', ...$this->fechaFutura(false)],
         ])->validate();
 
-        return DB::transaction(function () use ($actor, $idVersion, $validados, $precondicion): RevisionReglasAudiencia {
+        return DB::transaction(function () use ($actor, $idVersion, $validados, $precondicion, $huellaEjecucionRevisada): RevisionReglasAudiencia {
             $version = VersionReglasAudiencia::query()->findOrFail($idVersion);
+            $tieneContrato = array_key_exists('contrato_ejecucion', $version->contenido);
+            if ($tieneContrato) {
+                app(ContratoEjecucionReglas::class)->exigir($version->contenido, $version->id_tipo_audiencia);
+                if ($huellaEjecucionRevisada === null || ! hash_equals($version->huella_contenido, $huellaEjecucionRevisada)) {
+                    throw new DomainException('La revision debe confirmar la copia completa con sus instrucciones exactas.');
+                }
+            } elseif ($huellaEjecucionRevisada !== null) {
+                throw new DomainException('La version no contiene un contrato de ejecucion.');
+            }
             $habilitacion = $this->habilitacionVigente($actor->getKey(), $version->id_tipo_audiencia)
                 ->lockForUpdate()->first();
             if ($habilitacion === null) {
@@ -108,6 +117,7 @@ final class GestionarRevisionJuridicaReglas
 
             return $this->guardar(new RevisionReglasAudiencia, [
                 ...$validados, 'fecha_vencimiento' => $vencimiento,
+                ...($tieneContrato ? ['huella_ejecucion_revisada' => $huellaEjecucionRevisada] : []),
                 'id_version_reglas' => $idVersion, 'id_tipo_audiencia' => $version->id_tipo_audiencia,
                 'id_habilitacion' => $habilitacion->getKey(), 'id_usuario_revisor' => $actor->getKey(),
                 'huella_version' => $version->huella_contenido, 'alcance_revisado' => $habilitacion->alcance,

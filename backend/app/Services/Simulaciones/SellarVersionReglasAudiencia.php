@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 final class SellarVersionReglasAudiencia
 {
-    public function ejecutar(User $actor, int $idTipoAudiencia, string $motivo): VersionReglasAudiencia
+    public function ejecutar(User $actor, int $idTipoAudiencia, string $motivo, ?array $instrucciones = null, mixed $confirmacionInstrucciones = false): VersionReglasAudiencia
     {
         // Reconsultar los permisos: no confiar en relaciones de roles ya cargadas.
         if (! User::query()->findOrFail($actor->getKey())->hasRole('administrador_plataforma')) {
@@ -22,7 +22,11 @@ final class SellarVersionReglasAudiencia
             throw new DomainException('Indique un motivo de entre 1 y 2000 caracteres.');
         }
 
-        return DB::transaction(function () use ($actor, $idTipoAudiencia, $motivo): VersionReglasAudiencia {
+        if ($instrucciones !== null && $confirmacionInstrucciones !== true) {
+            throw new DomainException('Debe confirmar expresamente las instrucciones que se conservaran.');
+        }
+
+        return DB::transaction(function () use ($actor, $idTipoAudiencia, $motivo, $instrucciones): VersionReglasAudiencia {
             // Serializa el numero de version por tipo, sin MAX global ni IDs del cliente.
             TipoAudiencia::query()->whereKey($idTipoAudiencia)->lockForUpdate()->firstOrFail();
             // Una unica sentencia captura todos los componentes bajo la misma vista MVCC.
@@ -48,6 +52,13 @@ final class SellarVersionReglasAudiencia
             }
             if (strlen($snapshot->contenido) > 2_000_000) {
                 throw new DomainException('El borrador supera el limite de 2 MB para una version.');
+            }
+            if ($instrucciones !== null) {
+                $contenido['contrato_ejecucion'] = app(ContratoEjecucionReglas::class)->preparar($contenido, $idTipoAudiencia, $instrucciones);
+                $bytes = DB::selectOne('SELECT octet_length(?::jsonb::text) AS cantidad', [json_encode($contenido, JSON_THROW_ON_ERROR)])->cantidad;
+                if ($bytes > 2_000_000) {
+                    throw new DomainException('La copia ejecutable supera el limite de 2 MB.');
+                }
             }
 
             $numero = ((int) VersionReglasAudiencia::query()

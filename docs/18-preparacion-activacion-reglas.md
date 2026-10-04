@@ -40,7 +40,9 @@ Familias de bloqueos: formato/tipo o colecciones inválidas, etapas inválidas/d
 
 No reserva una revisión ni concede autoridad de ejecución. La estructura sellada y el estado jurídico se consultan por separado: no se ofrece una fotografía transaccional conjunta. Un retiro/vencimiento puede ocurrir antes de usar el resultado. Tampoco certifica disponibilidad actual de catálogos, participantes, análisis, proveedor o tratamiento de datos.
 
-## Activación todavía pendiente
+## Continuación de activación
+
+La persistencia del contrato ejecutable, revisión explícita de sus instrucciones, activación y retiro internos se desarrollan en `19-activacion-interna-reglas.md`. Este diagnóstico preliminar conserva su contrato de solo lectura y sus bloqueos: no se transforma en permiso. La interfaz de activación y la vinculación al motor continúan pendientes.
 
 El siguiente comando debe registrar una activación explícita e inmutable y su retiro, ligados a versión, revisión, habilitación y perfil estructural exactos. Debe comprobar otra vez permisos, integridad, estado y precondiciones dentro de la transacción, coordinando el orden de bloqueos con habilitación → versión y serializando el destino por tipo. Nunca reutilizar este diagnóstico como permiso.
 

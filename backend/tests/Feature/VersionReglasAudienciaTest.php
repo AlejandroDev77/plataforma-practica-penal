@@ -298,6 +298,8 @@ class VersionReglasAudienciaTest extends TestCase
 
     public function test_la_migracion_vacia_puede_revertirse_y_reinstalarse(): void
     {
+        $activacion = require database_path('migrations/2026_10_04_000001_registrar_activaciones_reglas.php');
+        $activacion->down();
         $revision = require database_path('migrations/2026_10_01_000002_registrar_revision_juridica_reglas.php');
         $revision->down();
         $migracion = require database_path('migrations/2026_10_01_000001_crear_versiones_reglas_audiencia.php');
@@ -305,6 +307,7 @@ class VersionReglasAudienciaTest extends TestCase
         $this->assertFalse(Schema::hasTable('versiones_reglas_audiencia'));
         $migracion->up();
         $revision->up();
+        $activacion->up();
         $this->assertTrue(Schema::hasTable('versiones_reglas_audiencia'));
     }
 

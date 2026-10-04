@@ -364,10 +364,13 @@ class RevisionJuridicaReglasTest extends TestCase
 
     public function test_rollback_preserva_historial_y_solo_revierte_tablas_vacias(): void
     {
+        $activacion = require database_path('migrations/2026_10_04_000001_registrar_activaciones_reglas.php');
+        $activacion->down();
         $migracion = require database_path('migrations/2026_10_01_000002_registrar_revision_juridica_reglas.php');
         $migracion->down();
         $this->assertFalse(Schema::hasTable('habilitaciones_revision_juridica'));
         $migracion->up();
+        $activacion->up();
         [$admin, $revisor, $version] = $this->escenario();
         $this->habilitar($admin, $revisor, $version);
         $this->rechazo(RuntimeException::class, fn () => $migracion->down());
