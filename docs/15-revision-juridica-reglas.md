@@ -65,4 +65,4 @@ Verificación del 1 de octubre de 2026: suite de la rama, 140 pruebas y 795 aser
 - Pruebas: `RevisionJuridicaReglasTest.php` y `VersionReglasAudienciaTest.php`, en `backend/tests/Feature`.
 - Documentación: `docs/04-simulacion.md`, `docs/14-versiones-reglas-audiencia.md` y este documento.
 
-Siguiente paso: exponer operaciones administrativas con acceso controlado y una interfaz que presente las evidencias y la versión exacta a revisar; mantener la activación como operación separada y no asignar habilitaciones sin comprobación humana real.
+La fase siguiente implementa la [API de gobierno de reglas](16-api-revision-reglas.md): consultas acotadas, sellado, habilitaciones, decisiones con precondición y revocaciones. Mantiene intactos los registros, sin asignar habilitaciones reales ni activar reglas. Sigue pendiente la interfaz que presente evidencias y versión exacta; la activación permanece separada y exige revisión profesional real.

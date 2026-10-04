@@ -49,8 +49,18 @@ final class GestionarRevisionJuridicaReglas
         });
     }
 
-    public function registrar(User $actor, int $idVersion, array $datos): RevisionReglasAudiencia
+    public function registrar(User $actor, int $idVersion, array $datos, ?array $precondicion = null): RevisionReglasAudiencia
     {
+        if ($precondicion !== null) {
+            $precondicion = Validator::make($precondicion, [
+                'huella_version_esperada' => ['required', 'string', 'regex:/^[0-9a-f]{64}$/'],
+                'id_ultima_revision_esperada' => ['present', 'nullable', 'integer', 'min:1'],
+                'estado_revision_esperado' => ['required', Rule::in([
+                    'no_acreditada', 'aprobado', 'requiere_cambios', 'revision_revocada',
+                    'habilitacion_revocada', 'habilitacion_vencida', 'revision_vencida',
+                ])],
+            ])->validate();
+        }
         $validados = Validator::make($datos, [
             'decision' => ['required', Rule::in(['aprobado', 'requiere_cambios'])],
             'observacion' => $this->texto(5000),
@@ -63,7 +73,7 @@ final class GestionarRevisionJuridicaReglas
             'fecha_vencimiento' => ['nullable', 'required_if:decision,aprobado', 'prohibited_if:decision,requiere_cambios', ...$this->fechaFutura(false)],
         ])->validate();
 
-        return DB::transaction(function () use ($actor, $idVersion, $validados): RevisionReglasAudiencia {
+        return DB::transaction(function () use ($actor, $idVersion, $validados, $precondicion): RevisionReglasAudiencia {
             $version = VersionReglasAudiencia::query()->findOrFail($idVersion);
             $habilitacion = $this->habilitacionVigente($actor->getKey(), $version->id_tipo_audiencia)
                 ->lockForUpdate()->first();
@@ -73,6 +83,17 @@ final class GestionarRevisionJuridicaReglas
             VersionReglasAudiencia::query()->whereKey($idVersion)->lockForUpdate()->firstOrFail();
             if (RevocacionHabilitacionJuridica::query()->where('id_habilitacion', $habilitacion->getKey())->exists()) {
                 throw new AuthorizationException('La habilitacion fue revocada.');
+            }
+            // Se compara despues de bloquear habilitacion y version, en ese orden.
+            // Dos envios con la misma lectura previa no agregan dos decisiones.
+            if ($precondicion !== null) {
+                $estado = app(ConsultarRevisionJuridicaReglas::class)->ejecutar($idVersion);
+                $idEsperado = $precondicion['id_ultima_revision_esperada'];
+                if (! hash_equals($version->huella_contenido, $precondicion['huella_version_esperada'])
+                    || $estado['review_id'] !== ($idEsperado === null ? null : (int) $idEsperado)
+                    || $estado['legal_review_status'] !== $precondicion['estado_revision_esperado']) {
+                    throw new DomainException('La version o su revision cambio. Consulte de nuevo antes de decidir.');
+                }
             }
             $autores = array_column($version->contenido['propuestas'], 'id_usuario_creador');
             if ($version->id_usuario_autor === $actor->getKey() || in_array($actor->getKey(), $autores, true)
