@@ -51,3 +51,5 @@ Archivos propios de esta fase: `VinculacionReglasPractica`, `CrearPracticaConReg
 ## Siguiente fase
 
 Integrar comandos de inicio, avance e intervención con esta base: etapas y transiciones desde la versión inmutable, revalidación bajo bloqueo por cada mutación y rechazo de contexto obsoleto. Solo después exponer creación y diagnóstico al flujo público y su interfaz. No tomar el catálogo vivo o una consulta anterior como autoridad de ejecución.
+
+El comando interno de inicio, avance y cierre se incorpora en [24-movimientos-internos-practicas.md](24-movimientos-internos-practicas.md), mediante movimientos inmutables y actualización atómica. Las intervenciones y el flujo público siguen pendientes; este documento conserva el alcance histórico de la fase 23.

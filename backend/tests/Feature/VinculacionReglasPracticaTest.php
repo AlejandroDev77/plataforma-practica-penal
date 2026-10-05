@@ -300,9 +300,12 @@ class VinculacionReglasPracticaTest extends TestCase
 
     public function test_rollback_vacio_es_reversible_pero_no_elimina_evidencia(): void
     {
+        $movimientos = require database_path('migrations/2026_10_04_000003_registrar_movimientos_practicas.php');
+        $movimientos->down();
         $m = require database_path('migrations/2026_10_04_000002_vincular_practicas_reglas.php');
         $m->down();
         $m->up();
+        $movimientos->up();
         $e = $this->escenario();
         $s = $this->crear($e);
         $this->rechazo(RuntimeException::class, fn () => $m->down());
