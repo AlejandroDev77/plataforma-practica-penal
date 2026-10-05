@@ -1,5 +1,7 @@
 # Fase 27 — API y orquestación de prácticas regladas
 
+La conexión de interfaz y las tres consultas privadas de apoyo se documentan en [fase 28](28-interfaz-practicas-regladas.md). Las ocho rutas originales de esta fase conservan su contrato.
+
 ## Alcance
 
 Conecta los comandos de fases 23–26 mediante ocho rutas privadas. No cambia las audiencias antiguas, su controlador ni su orquestador. No añade normas, aprobaciones, activaciones o acreditaciones profesionales reales. No modifica PostgreSQL habitual ni requiere una migración nueva. La conexión de la interfaz pertenece a la fase siguiente.

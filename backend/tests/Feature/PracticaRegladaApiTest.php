@@ -109,10 +109,10 @@ class PracticaRegladaApiTest extends TestCase
 
     public function test_todas_las_operaciones_requieren_autenticacion_y_no_cache(): void
     {
-        foreach (['orquestacion', 'proveedor', 'borradores/1'] as $accion) {
+        foreach (['orquestacion', 'acta', 'proveedor', 'borradores', 'borradores/1'] as $accion) {
             $this->getJson($this->ruta(1, $accion))->assertUnauthorized()->assertHeader('Cache-Control', 'no-store, private');
         }
-        foreach (['movimientos', 'defensa', 'borradores', 'borradores/1/confirmacion'] as $accion) {
+        foreach (['movimientos', 'defensa', 'fuentes', 'borradores', 'borradores/1/confirmacion'] as $accion) {
             $this->postJson($this->ruta(1, $accion), [])->assertUnauthorized()->assertHeader('Cache-Control', 'no-store, private');
         }
         $this->postJson('/api/v1/practicas-regladas/expedientes/1')->assertUnauthorized()->assertHeader('Cache-Control', 'no-store, private');
@@ -126,18 +126,116 @@ class PracticaRegladaApiTest extends TestCase
         $d = $this->entrada($id);
         $b = $this->postJson($this->ruta($id, 'borradores'), $this->contexto($d))->assertCreated()->json('data.id_borrador');
         Sanctum::actingAs($e['admin']);
-        foreach (['orquestacion', 'proveedor', "borradores/{$b}"] as $accion) {
+        foreach (['orquestacion', 'acta', 'proveedor', 'borradores', "borradores/{$b}"] as $accion) {
             $this->getJson($this->ruta($id, $accion))->assertNotFound()->assertHeader('Cache-Control', 'no-store, private');
         }
         $this->postJson($this->ruta($id, 'movimientos'), ['accion' => 'avanzar', 'estado_esperado' => 'activa',
             'id_etapa_esperada' => $d['stage']['id_etapa']])->assertNotFound();
         $this->postJson($this->ruta($id, 'defensa'), [...$this->contexto($d), 'contenido' => 'Texto sintético.'])->assertNotFound();
         $this->postJson($this->ruta($id, 'borradores'), $this->contexto($d))->assertNotFound();
+        $this->postJson($this->ruta($id, 'fuentes'), ['consulta' => 'Texto sintético'])->assertNotFound();
         $this->postJson($this->ruta($id, "borradores/{$b}/confirmacion"), ['confirmacion_humana' => true])->assertNotFound();
         $this->postJson("/api/v1/practicas-regladas/expedientes/{$e['case']->getKey()}", [
             'id_analisis' => $e['analysis']->getKey(), 'id_tipo_audiencia' => $e['type']->getKey(), 'id_activacion' => $e['activation']->getKey(),
         ])->assertNotFound();
         $this->assertDatabaseCount('intervenciones', 0);
+    }
+
+    public function test_acta_y_busqueda_privadas_no_consultan_turnos_vivos_ni_generan(): void
+    {
+        $e = $this->escenario();
+        $id = $this->iniciar($e);
+        $this->getJson($this->ruta($id, 'acta'))->assertOk()->assertHeader('Cache-Control', 'no-store, private')
+            ->assertExactJson(['data' => ['id' => $id, 'case_id' => $e['case']->getKey(), 'interventions' => []]]);
+        $this->postJson($this->ruta($id, 'fuentes'), ['consulta' => 'Prueba sintética', 'limite' => 5])
+            ->assertOk()->assertHeader('Cache-Control', 'no-store, private')->assertExactJson(['data' => ['expediente' => [], 'juridica' => []]]);
+        $this->getJson($this->ruta($id, 'acta').'?id_usuario=1')->assertUnprocessable();
+        foreach ([['consulta' => 'ab'], ['consulta' => str_repeat('a', 501)], ['consulta' => 'Texto', 'limite' => 11],
+            ['consulta' => 'Texto', 'id_usuario' => 1]] as $campos) {
+            $this->postJson($this->ruta($id, 'fuentes'), $campos)->assertUnprocessable();
+        }
+        $this->gateway();
+        $d = $this->entrada($id);
+        $b = $this->postJson($this->ruta($id, 'borradores'), $this->contexto($d))->assertCreated()->json('data.id_borrador');
+        $i = $this->postJson($this->ruta($id, "borradores/{$b}/confirmacion"), ['confirmacion_humana' => true])
+            ->assertOk()->json('data.id_intervencion');
+        $acta = $this->getJson($this->ruta($id, 'acta'))->assertOk()->assertJsonCount(1, 'data.interventions')
+            ->assertJsonPath('data.interventions.0.id', $i)->assertJsonPath('data.interventions.0.participant.role', 'juez')->json('data');
+        $this->assertSame(['id', 'case_id', 'interventions'], array_keys($acta));
+        $this->assertSame(1, $acta['interventions'][0]['order']);
+        $this->assertSame([], $acta['interventions'][0]['sources']);
+        $this->assertArrayNotHasKey('metadatos', $acta['interventions'][0]);
+        $this->assertDatabaseCount('intervenciones', 1);
+        $this->assertDatabaseCount('borradores_agentes_reglados', 1);
+        Http::assertNothingSent();
+    }
+
+    public function test_propietario_es_inmutable_y_lecturas_solo_para_titular(): void
+    {
+        $e = $this->escenario();
+        $id = $this->iniciar($e);
+        try {
+            DB::transaction(function () use ($e): void {
+                DB::table('expedientes')->where('id_expediente', $e['case']->getKey())->update(['id_usuario' => $e['admin']->getKey()]);
+            });
+            $this->fail('No debe permitir cambiar el propietario.');
+        } catch (QueryException $error) {
+            $this->assertSame('23514', $error->errorInfo[0]);
+        }
+        $this->getJson($this->ruta($id, 'acta'))->assertOk();
+        Sanctum::actingAs($e['admin']);
+        foreach (['orquestacion', 'acta', 'borradores', 'proveedor'] as $accion) {
+            $this->getJson($this->ruta($id, $accion))->assertNotFound()->assertHeader('Cache-Control', 'no-store, private');
+        }
+        $this->postJson($this->ruta($id, 'fuentes'), ['consulta' => 'Texto sintético'])->assertNotFound();
+        $this->assertDatabaseCount('intervenciones', 0);
+        $this->assertDatabaseCount('borradores_agentes_reglados', 0);
+        Http::assertNothingSent();
+    }
+
+    public function test_historial_privado_paginado_recupera_sin_generar_ni_confirmar(): void
+    {
+        $e = $this->escenario();
+        $id = $this->iniciar($e);
+        $this->withoutMiddleware(ThrottleRequests::class);
+        $this->gateway();
+        $d = $this->entrada($id);
+        $ids = [];
+        for ($n = 0; $n < 13; $n++) {
+            $ids[] = $this->postJson($this->ruta($id, 'borradores'), $this->contexto($d))->assertCreated()->json('data.id_borrador');
+        }
+        $p = $this->getJson($this->ruta($id, 'borradores'))->assertOk()->assertHeader('Cache-Control', 'no-store, private')->json();
+        $this->assertSame(array_slice(array_reverse($ids), 0, 10), array_column($p['data'], 'id_borrador'));
+        $this->assertSame($ids[3], $p['next_cursor']);
+        foreach ($p['data'] as $b) {
+            $this->assertSame(['id_borrador', 'id_movimiento', 'id_etapa', 'id_propuesta_turno', 'orden', 'rol', 'vencido', 'id_intervencion_confirmada'], array_keys($b));
+            $this->assertFalse($b['vencido']);
+            $this->assertNull($b['id_intervencion_confirmada']);
+        }
+        $this->getJson($this->ruta($id, 'borradores').'?id_antes='.$p['next_cursor'])->assertOk()
+            ->assertJsonCount(3, 'data')->assertJsonPath('next_cursor', null)->assertJsonPath('data.0.id_borrador', $ids[2]);
+        $this->getJson($this->ruta($id, "borradores/{$ids[12]}"))->assertOk();
+        $this->assertDatabaseCount('intervenciones', 0);
+        $this->assertDatabaseCount('borradores_agentes_reglados', 13);
+        $i = $this->postJson($this->ruta($id, "borradores/{$ids[12]}/confirmacion"), ['confirmacion_humana' => true])
+            ->assertOk()->json('data.id_intervencion');
+        $this->getJson($this->ruta($id, 'borradores'))->assertOk()->assertJsonPath('data.0.id_intervencion_confirmada', $i);
+        $this->assertDatabaseCount('intervenciones', 1);
+        $this->assertDatabaseCount('borradores_agentes_reglados', 13);
+        Http::assertNothingSent();
+    }
+
+    public function test_historial_rechaza_campos_extra_y_cursor_invalido(): void
+    {
+        $e = $this->escenario();
+        $id = $this->iniciar($e);
+        $this->getJson($this->ruta($id, 'borradores'))->assertOk()->assertExactJson(['data' => [], 'next_cursor' => null]);
+        foreach (['id_antes=0', 'id_antes=-1', 'id_antes=abc', 'id_antes[]=1', 'id_usuario=1', 'por_pagina=100'] as $consulta) {
+            $this->getJson($this->ruta($id, 'borradores').'?'.$consulta)->assertUnprocessable()->assertHeader('Cache-Control', 'no-store, private');
+        }
+        $this->assertDatabaseCount('intervenciones', 0);
+        $this->assertDatabaseCount('borradores_agentes_reglados', 0);
+        Http::assertNothingSent();
     }
 
     public function test_confirmacion_y_seleccion_son_explicitas_sin_campos_adicionales(): void

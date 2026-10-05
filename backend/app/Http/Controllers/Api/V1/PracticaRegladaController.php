@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\V1\SimulacionResource;
 use App\Models\BorradorAgenteReglado;
 use App\Models\Intervencion;
 use App\Models\RegistroIntervencionReglada;
+use App\Models\Simulacion;
 use App\Models\User;
 use App\Modules\Simulations\Application\Contracts\AgenteRegladoGateway;
+use App\Services\Recuperacion\BuscarFuentesSimulacion;
 use App\Services\Simulaciones\ConfirmarAgenteReglado;
 use App\Services\Simulaciones\CrearPracticaConReglas;
 use App\Services\Simulaciones\MoverPracticaReglada;
@@ -46,6 +49,27 @@ final class PracticaRegladaController extends Controller
         return response()->json(['data' => ['id_simulacion' => $s->getKey(), 'estado' => $s->estado, 'id_etapa_actual' => $s->id_etapa_actual]]);
     }
 
+    public function acta(Request $request, int $practica): JsonResponse
+    {
+        $s = $this->propiedad($request->user(), $practica);
+        $this->campos($request, []);
+        $s->load(['intervenciones' => fn ($q) => $q->orderBy('orden'), 'intervenciones.participante', 'intervenciones.fuentes']);
+        $datos = SimulacionResource::make($s)->resolve($request);
+
+        // Reutiliza las citas almacenadas; no consulta turnos o destinos del catálogo vivo.
+        return response()->json(['data' => array_intersect_key($datos, array_flip(['id', 'case_id', 'interventions']))]);
+    }
+
+    public function fuentes(Request $request, int $practica, BuscarFuentesSimulacion $buscar): JsonResponse
+    {
+        $s = $this->propiedad($request->user(), $practica);
+        $d = $this->campos($request, ['consulta' => ['required', 'string', 'min:3', 'max:500'],
+            'limite' => ['sometimes', 'integer', 'min:1', 'max:10']]);
+        $r = $buscar->ejecutar($s, $d['consulta'], (int) ($d['limite'] ?? 5));
+
+        return response()->json(['data' => ['expediente' => $r['expediente']['resultados'], 'juridica' => $r['juridica']['resultados']]]);
+    }
+
     public function defensa(Request $request, int $practica, RegistrarDefensaReglada $registrar): JsonResponse
     {
         $d = $this->campos($request, [...$this->contexto(), 'contenido' => ['required', 'string', 'max:2000'],
@@ -73,6 +97,29 @@ final class PracticaRegladaController extends Controller
             ->where('id_usuario_responsable', $request->user()->getKey())->firstOrFail();
 
         return response()->json(['data' => $this->proyectarBorrador($b)]);
+    }
+
+    public function borradores(Request $request, int $practica): JsonResponse
+    {
+        $this->propiedad($request->user(), $practica);
+        $d = $this->campos($request, ['id_antes' => ['sometimes', 'integer', 'min:1']]);
+        $filas = DB::table('borradores_agentes_reglados as b')
+            ->leftJoin('registros_intervenciones_regladas as r', 'r.id_borrador', '=', 'b.id_borrador')
+            ->where('b.id_simulacion', $practica)->where('b.id_usuario_responsable', $request->user()->getKey())
+            ->when(isset($d['id_antes']), fn ($q) => $q->where('b.id_borrador', '<', $d['id_antes']))
+            ->orderByDesc('b.id_borrador')->limit(11)
+            ->select(['b.id_borrador', 'b.id_movimiento', 'b.id_etapa', 'b.id_propuesta_turno', 'b.orden',
+                'b.fecha_vencimiento', 'r.id_intervencion'])
+            ->selectRaw("(b.respuesta->>'speaker_role') rol, b.fecha_vencimiento <= clock_timestamp() vencido")
+            ->get();
+        $pagina = $filas->take(10);
+
+        return response()->json(['data' => $pagina->map(fn ($b) => [
+            'id_borrador' => (int) $b->id_borrador, 'id_movimiento' => (int) $b->id_movimiento,
+            'id_etapa' => (int) $b->id_etapa, 'id_propuesta_turno' => (int) $b->id_propuesta_turno,
+            'orden' => (int) $b->orden, 'rol' => $b->rol, 'vencido' => (bool) $b->vencido,
+            'id_intervencion_confirmada' => $b->id_intervencion === null ? null : (int) $b->id_intervencion,
+        ])->values(), 'next_cursor' => $filas->count() > 10 ? (int) $pagina->last()->id_borrador : null]);
     }
 
     public function confirmar(Request $request, int $practica, int $borrador, ConfirmarAgenteReglado $confirmar): JsonResponse
@@ -118,9 +165,9 @@ final class PracticaRegladaController extends Controller
             'id_etapa' => $i->id_etapa, 'orden' => $i->orden, 'contenido' => $i->contenido, 'modelo_ia' => $i->modelo_ia]], $status);
     }
 
-    private function propiedad(User $actor, int $id): void
+    private function propiedad(User $actor, int $id): Simulacion
     {
-        $actor->simulaciones()->whereKey($id)->whereHas('expediente', fn ($q) => $q->where('id_usuario', $actor->getKey()))->firstOrFail();
+        return $actor->simulaciones()->whereKey($id)->whereHas('expediente', fn ($q) => $q->where('id_usuario', $actor->getKey()))->firstOrFail();
     }
 
     private function campos(Request $request, array $reglas): array
