@@ -95,3 +95,5 @@ Route::prefix('internal/v1')->middleware(VerificarTokenServicioInterno::class)->
     Route::post('/expedientes/{expediente}/analisis', [AnalisisInternoController::class, 'store']);
     Route::post('/fuentes-juridicas/{fuente}/indexar', [RecuperacionInternaController::class, 'indexarFuenteJuridica']);
 });
+
+require __DIR__.'/practicas-regladas.php';

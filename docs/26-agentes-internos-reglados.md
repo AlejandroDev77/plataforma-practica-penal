@@ -50,6 +50,8 @@ La suite nueva necesita transacciones reales con llamadas fuera de ellas: no man
 
 ## Siguiente paso
 
+La conexión pública de comandos y la orquestación privada se documentan en [fase 27](27-api-practicas-regladas.md). La interfaz continúa como fase posterior.
+
 Exponer creación, consulta de la copia revisada, movimientos, selección/consentimiento, revisión de borradores y defensa mediante API y orquestador, con respuestas privadas y precondiciones explícitas. Luego conectar la interfaz y probar aceptación integral. El diagnóstico de fase 23 no cambia a ejecución autorizada mientras falte esa integración pública.
 
 
