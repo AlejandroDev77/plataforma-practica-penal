@@ -42,6 +42,8 @@ No usar `migrate:fresh` en `jurissim`. Las pruebas destructivas comprueban base 
 
 ## Siguiente paso
 
+La [fase 25](25-registro-interno-defensa.md) continúa con el registro interno de texto de la defensa y sus fuentes. No incorpora todavía propuestas de agentes ni el flujo público completo; los límites de este documento corresponden a su entrega original.
+
 Integrar el registro de intervenciones a este vínculo con controles de turno, participantes, historial y fuentes en la transacción. Después adaptar la propuesta/confirmación de agentes y exponer el flujo nuevo mediante API, diagnóstico del orquestador e interfaz, con pruebas completas de aceptación. Mantener separadas la autorización técnica y la revisión profesional del contenido.
 
 ## Verificación de la entrega

@@ -275,6 +275,8 @@ class MovimientoPracticaRegladaTest extends TestCase
 
     public function test_rollback_vacio_reinstala_y_restauracion_bloquea_comandos_nuevos(): void
     {
+        $defensa = require database_path('migrations/2026_10_04_000004_registrar_defensa_reglada.php');
+        $defensa->down();
         $m = require database_path('migrations/2026_10_04_000003_registrar_movimientos_practicas.php');
         $m->down();
         $m->up();
@@ -284,6 +286,7 @@ class MovimientoPracticaRegladaTest extends TestCase
         $this->rechazoSql(fn () => app(AvanzarEtapaAudiencia::class)->ejecutar($s));
         $m->up();
         $this->assertSame('activa', $this->mover($e, $s, 'iniciar')->estado);
+        $defensa->up();
     }
 
     public function test_segunda_conexion_con_snapshot_obsoleto_es_rechazada(): void

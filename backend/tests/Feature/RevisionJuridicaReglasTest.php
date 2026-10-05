@@ -365,6 +365,8 @@ class RevisionJuridicaReglasTest extends TestCase
     public function test_rollback_preserva_historial_y_solo_revierte_tablas_vacias(): void
     {
         $movimientos = require database_path('migrations/2026_10_04_000003_registrar_movimientos_practicas.php');
+        $defensa = require database_path('migrations/2026_10_04_000004_registrar_defensa_reglada.php');
+        $defensa->down();
         $movimientos->down();
         $vinculacion = require database_path('migrations/2026_10_04_000002_vincular_practicas_reglas.php');
         $vinculacion->down();
@@ -377,6 +379,7 @@ class RevisionJuridicaReglasTest extends TestCase
         $activacion->up();
         $vinculacion->up();
         $movimientos->up();
+        $defensa->up();
         [$admin, $revisor, $version] = $this->escenario();
         $this->habilitar($admin, $revisor, $version);
         $this->rechazo(RuntimeException::class, fn () => $migracion->down());
