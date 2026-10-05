@@ -277,6 +277,8 @@ class DefensaRegladaTest extends TestCase
 
     public function test_rollback_vacio_restaura_el_bloqueo_de_intervenciones(): void
     {
+        $agentes = require database_path('migrations/2026_10_04_000005_confirmar_agentes_reglados.php');
+        $agentes->down();
         [$e, $s] = $this->lista();
         $m = require database_path('migrations/2026_10_04_000004_registrar_defensa_reglada.php');
         $m->down();
@@ -285,6 +287,7 @@ class DefensaRegladaTest extends TestCase
             'id_tipo_audiencia' => $s->id_tipo_audiencia, 'id_etapa' => $s->id_etapa_actual,
             'orden' => 2, 'contenido' => 'Sintetico.', 'tipo_entrada' => 'texto'])));
         $m->up();
+        $agentes->up();
         $this->assertSame(2, $this->registrar($e, $s)->orden);
     }
 

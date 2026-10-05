@@ -366,6 +366,8 @@ class RevisionJuridicaReglasTest extends TestCase
     {
         $movimientos = require database_path('migrations/2026_10_04_000003_registrar_movimientos_practicas.php');
         $defensa = require database_path('migrations/2026_10_04_000004_registrar_defensa_reglada.php');
+        $agentes = require database_path('migrations/2026_10_04_000005_confirmar_agentes_reglados.php');
+        $agentes->down();
         $defensa->down();
         $movimientos->down();
         $vinculacion = require database_path('migrations/2026_10_04_000002_vincular_practicas_reglas.php');
@@ -380,6 +382,7 @@ class RevisionJuridicaReglasTest extends TestCase
         $vinculacion->up();
         $movimientos->up();
         $defensa->up();
+        $agentes->up();
         [$admin, $revisor, $version] = $this->escenario();
         $this->habilitar($admin, $revisor, $version);
         $this->rechazo(RuntimeException::class, fn () => $migracion->down());

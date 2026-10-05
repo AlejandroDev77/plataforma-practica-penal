@@ -44,6 +44,8 @@ Nunca `migrate:fresh` en `jurissim`. Las pruebas destructivas verifican configur
 
 ## Siguiente paso
 
+La [fase 26](26-agentes-internos-reglados.md) incorpora propuestas y confirmación internas de juez/fiscal al registro auditado. Mantiene pendiente la integración pública con API, orquestador e interfaz; los límites anteriores describen la entrega original de esta fase.
+
 Adaptar propuestas y confirmación de agentes al mismo vínculo, contexto exacto, vigencia, fuentes y registro transaccional. Después conectar creación, movimientos, intervenciones y proyección de la copia revisada a API/orquestador/interfaz, manteniendo separadas autorización técnica y revisión profesional. El diagnóstico público de fase 23 sigue sin declarar ejecución autorizada ni integración completa.
 
 
