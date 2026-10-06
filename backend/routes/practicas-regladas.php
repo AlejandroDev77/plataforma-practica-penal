@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\PracticaRegladaController;
+use App\Http\Controllers\Api\V1\PreparacionEvaluacionRegladaController;
 use App\Http\Middleware\ResponderPracticaReglada;
 use Illuminate\Support\Facades\Route;
 
@@ -8,6 +9,7 @@ Route::prefix('v1/practicas-regladas')->middleware([ResponderPracticaReglada::cl
     Route::post('/expedientes/{expediente}', [PracticaRegladaController::class, 'crear'])->whereNumber('expediente')->middleware('throttle:practicas-regladas-comandos');
     Route::get('/{practica}/orquestacion', [PracticaRegladaController::class, 'consultar'])->whereNumber('practica');
     Route::get('/{practica}/acta', [PracticaRegladaController::class, 'acta'])->whereNumber('practica');
+    Route::get('/{practica}/preparacion-evaluacion', PreparacionEvaluacionRegladaController::class)->whereNumber('practica');
     Route::post('/{practica}/fuentes', [PracticaRegladaController::class, 'fuentes'])->whereNumber('practica');
     Route::get('/{practica}/proveedor', [PracticaRegladaController::class, 'proveedor'])->whereNumber('practica')->middleware('throttle:practicas-regladas-proveedor');
     Route::post('/{practica}/movimientos', [PracticaRegladaController::class, 'mover'])->whereNumber('practica')->middleware('throttle:practicas-regladas-comandos');

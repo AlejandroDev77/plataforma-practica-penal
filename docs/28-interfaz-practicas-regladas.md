@@ -1,5 +1,7 @@
 # Fase 28 — Interfaz de prácticas regladas
 
+La comprobación privada previa a evaluación y la separación del evaluador anterior se documentan en [fase 29](29-preparacion-evaluacion-reglada.md); no implican generación de puntajes ni aprobación de rúbricas.
+
 ## Alcance y decisión de interfaz
 
 Conecta la administración con los comandos privados de fase 27: creación con una activación revisada explícita, inicio, selección de fuentes, consentimiento de envío, revisión de borradores, defensa, avance y cierre. Mantiene React, TypeScript, TanStack Query, Axios y los componentes existentes; no añade dependencias, versiones, migraciones, Docker ni cambios de proveedor.

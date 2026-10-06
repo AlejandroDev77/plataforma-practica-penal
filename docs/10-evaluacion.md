@@ -1,5 +1,7 @@
 # Evaluación de prácticas de audiencia
 
+Este evaluador corresponde al circuito anterior, sin vínculo reglado. Las prácticas del circuito nuevo no pueden solicitarse ni procesarse por estas rutas: su comprobación técnica y las condiciones pendientes de revisión de rúbrica se documentan en [fase 29](29-preparacion-evaluacion-reglada.md).
+
 ## Alcance de este hito
 
 El backend acepta una solicitud de evaluación únicamente cuando la simulación del usuario autenticado ya terminó, contiene al menos una intervención de la defensa y existe una sola rúbrica activa aplicable. Laravel elige la rúbrica en el servidor; el cliente no puede seleccionar rúbrica, modificar puntajes ni sustituir la transcripción.
