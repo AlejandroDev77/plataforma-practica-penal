@@ -1,12 +1,12 @@
 # Fase 29 — Comprobación previa de evaluación reglada
 
-El historial de copias y revisión de rúbricas se implementa en [fase 30](30-revision-interna-rubricas.md). Esta consulta conserva su contrato; el historial nuevo no concede por sí solo ejecución ni activación.
+El historial de copias y revisión de rúbricas se implementa en [fase 30](30-revision-interna-rubricas.md). La activación y su conexión de lectura se añaden en [fase 31](31-activacion-interna-rubricas.md), sin conceder ejecución. Este documento conserva el alcance original de fase 29 salvo esa evolución explícita.
 
 ## Alcance
 
 Se añade una consulta privada de backend para comprobar los requisitos técnicos de evaluación del acta cerrada. No genera puntajes, no crea evaluaciones ni trabajos de cola, no llama a FastAPI/Ollama/OpenAI y no cambia reglas, rúbricas, revisiones o la base habitual. No incorpora todavía una pantalla de evaluación al circuito nuevo.
 
-La aprobación jurídica de la secuencia de audiencia no acredita una rúbrica académica. El catálogo actual tiene versiones y criterios, pero no un registro verificable de revisión profesional de rúbricas. Por ello `rubric_review_status` siempre es `no_verificable`; `execution_authorized=false` y `allowed_actions=[]`, incluso si `technical_ready=true`. La comprobación no constituye una instantánea persistida ni una reserva: una futura solicitud debe verificar de nuevo y conservar exactamente el contexto autorizado.
+La aprobación jurídica de la secuencia de audiencia no acredita una rúbrica académica. Sin una activación explícita del historial de fase 31, el catálogo editable no acredita revisión profesional y `rubric_review_status` es `no_verificable`. Con copia activada se informa su revisión y vigencia. En ambos casos `execution_authorized=false` y `allowed_actions=[]`, incluso si `technical_ready=true`. La comprobación no constituye una instantánea persistida ni una reserva: una futura solicitud debe verificar de nuevo y conservar exactamente el contexto autorizado.
 
 ## Consulta y privacidad
 
@@ -33,7 +33,7 @@ El acta necesita defensa, roles admitidos, hasta cuarenta intervenciones y texto
 
 Se limita a 20.000 caracteres la suma de criterios, turnos y referencias de defensa, sin enviar esos textos. Solo se recorren 41 intervenciones para detectar exceso: `intervention_count` es el total exacto; si `complete_count=false`, los otros contadores representan el prefijo observado y no un contexto completo utilizable. No se afirma verificación semántica de las citas ni vigencia actual de cada fuente histórica por poder contarla. La ejecución futura deberá definir esa política y el consentimiento para el contexto concreto.
 
-Una evaluación pendiente/procesando bloquea otra. Error/procesado no bloquean la consulta, pero tampoco conceden permiso de generación. Los cambios del catálogo se vuelven a consultar; esta lectura no congela una versión.
+Una evaluación pendiente/procesando bloquea otra. Error/procesado no bloquean la consulta, pero tampoco conceden permiso de generación. Sin historial de activación se vuelve a consultar el catálogo como diagnóstico; con activación se lee únicamente la copia sellada de fase 31. Esta lectura no conserva un contexto de evaluación.
 
 Si no hay una rúbrica compatible y única, el recuento de caracteres incluye solo el acta observada; no representa un contexto válido de evaluación. `complete_count` indica que se recorrió el acta completa, no que el contexto esté autorizado ni profesionalmente revisado.
 

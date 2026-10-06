@@ -1,5 +1,7 @@
 # Fase 30 — Versiones y revisión interna de rúbricas
 
+La activación técnica explícita y su conexión a la consulta de preparación se implementan en [fase 31](31-activacion-interna-rubricas.md). Esta fase 30 conserva el historial de revisión sin activar por sí sola una copia ni permitir puntajes.
+
 ## Alcance de datos
 
 Se implementa el historial técnico para preparar copias inmutables de una rúbrica de defensa y registrar su habilitación profesional, revisión y retiro. Solo PostgreSQL local, modelos y comandos internos de Laravel. No hay endpoints nuevos, frontend, activación de rúbricas, evaluador nuevo ni llamadas a servicios de IA. No se precarga ninguna rúbrica jurídica ni se acredita a ninguna persona real.

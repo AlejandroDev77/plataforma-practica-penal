@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 /** Diagnóstico privado. No congela contexto, acredita rúbricas ni autoriza generación. */
 final readonly class ConsultarPreparacionEvaluacionReglada
 {
-    public function __construct(private OrquestadorPracticaReglada $orquestador) {}
+    public function __construct(private OrquestadorPracticaReglada $orquestador, private ConsultarRubricaActivada $activada) {}
 
     public function ejecutar(User $actor, int $id): array
     {
@@ -23,6 +23,7 @@ final readonly class ConsultarPreparacionEvaluacionReglada
                 'simulation_id' => $id, 'read_only' => true, 'execution_authorized' => false,
                 'allowed_actions' => [], 'technical_ready' => false,
                 'rubric_review_status' => 'no_verificable',
+                'rubric_activation_status' => 'sin_activacion',
                 'blocking_reasons' => ['revision_rubrica_no_verificable', 'ejecucion_no_integrada'],
                 'technical_blocking_reasons' => [], 'rubric' => null, 'transcript' => null,
             ];
@@ -46,7 +47,21 @@ final readonly class ConsultarPreparacionEvaluacionReglada
                 return $resultado;
             }
 
-            [$rubrica, $motivo, $caracteres] = $this->rubrica($s);
+            $activacion = $this->activada->ejecutar($s->id_tipo_audiencia, $s->rol_usuario);
+            if ($activacion === null) {
+                // El catálogo anterior solo permite diagnóstico, nunca aprobación ni fallback ejecutable.
+                [$rubrica, $motivo, $caracteres] = $this->rubrica($s);
+            } else {
+                $resultado['rubric_activation_status'] = $activacion['estado_activacion'];
+                $resultado['rubric_review_status'] = $activacion['estado_revision'];
+                $resultado['blocking_reasons'] = ['contexto_inmutable_no_integrado', 'ejecucion_no_integrada'];
+                $rubrica = $activacion['rubrica'];
+                $caracteres = $activacion['caracteres_criterios'];
+                $motivo = $rubrica === null ? 'rubrica_activada_no_vigente' : null;
+                if ($motivo !== null) {
+                    array_unshift($resultado['blocking_reasons'], 'activacion_rubrica_no_vigente');
+                }
+            }
             if (trim($o['type']['nombre']) === '' || mb_strlen($o['type']['nombre'], 'UTF-8') > 100) {
                 $resultado['technical_blocking_reasons'][] = 'tipo_audiencia_incompatible';
             }
