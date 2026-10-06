@@ -1,5 +1,7 @@
 # Fase 29 — Comprobación previa de evaluación reglada
 
+El historial de copias y revisión de rúbricas se implementa en [fase 30](30-revision-interna-rubricas.md). Esta consulta conserva su contrato; el historial nuevo no concede por sí solo ejecución ni activación.
+
 ## Alcance
 
 Se añade una consulta privada de backend para comprobar los requisitos técnicos de evaluación del acta cerrada. No genera puntajes, no crea evaluaciones ni trabajos de cola, no llama a FastAPI/Ollama/OpenAI y no cambia reglas, rúbricas, revisiones o la base habitual. No incorpora todavía una pantalla de evaluación al circuito nuevo.
