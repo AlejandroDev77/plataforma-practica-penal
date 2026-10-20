@@ -3,6 +3,7 @@ import { ArrowRight, CalendarDays, CircleAlert } from 'lucide-react'
 import { Badge } from '../../../components/ui/AdminUi'
 import { getAuthErrorMessage } from '../../auth/api/auth-api'
 import { useCaseAnalysis } from '../../cases/model/use-cases'
+import '../simulations.css'
 import { useCaseSimulations } from '../model/use-simulations'
 import { CrearPracticaReglada } from '../../practicas/components/CrearPracticaReglada'
 
