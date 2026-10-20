@@ -27,7 +27,8 @@ class LocalEvaluationService:
         self.transport = transport
 
     async def evaluate(self, request: EvaluationRequest) -> EvaluationResult:
-        if self.settings.llm_provider != "ollama" or not self.settings.llm_model:
+        model = self.settings.evaluation_generation_model
+        if self.settings.evaluation_generation_provider != "ollama" or not model:
             raise EvaluationServiceError(
                 "local_model_not_configured",
                 "La evaluación local está desactivada o no tiene un modelo configurado.",
@@ -35,7 +36,7 @@ class LocalEvaluationService:
             )
 
         payload = {
-            "model": self.settings.llm_model,
+            "model": model,
             "stream": False,
             "think": False,
             "format": EvaluationResult.model_json_schema(),

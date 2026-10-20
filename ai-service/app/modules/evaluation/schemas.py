@@ -32,6 +32,7 @@ class EvaluationTurn(StrictModel):
 
 
 class EvaluationRequest(StrictModel):
+    external_authorized: bool = False
     hearing_type: str = Field(min_length=1, max_length=100)
     user_role: Literal["abogado_defensor"]
     rubric_name: str = Field(min_length=1, max_length=255)

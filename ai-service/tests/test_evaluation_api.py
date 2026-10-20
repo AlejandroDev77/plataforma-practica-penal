@@ -130,3 +130,78 @@ async def test_internal_evaluation_rejects_client_supplied_system_fields(monkeyp
         )
 
     assert response.status_code == 422
+
+
+async def test_openai_evaluation_requires_external_consent_before_service_call(monkeypatch):
+    monkeypatch.setattr(
+        dependencies,
+        "get_settings",
+        lambda: Settings(
+            service_token=SecretStr("local-internal-secret"),
+            evaluation_provider="openai",
+        ),
+    )
+
+    class StubOpenAIService:
+        def __init__(self, settings: Settings) -> None:
+            pass
+
+        async def evaluate(self, request: EvaluationRequest) -> EvaluationResult:
+            assert request.external_authorized is True
+            return EvaluationResult(
+                summary="Lectura sintética.",
+                criteria=[
+                    {
+                        "criterion_id": 31,
+                        "score": 5,
+                        "feedback": "Observación sintética.",
+                        "strengths": [],
+                        "errors": [],
+                        "recommendations": [],
+                    }
+                ],
+                requires_human_review=True,
+            )
+
+    monkeypatch.setattr(evaluations_route, "OpenAIEvaluationService", StubOpenAIService)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        headers = {"Authorization": "Bearer local-internal-secret"}
+        denied = await client.post(
+            "/api/v1/evaluations/evaluate", headers=headers, json=sample_request()
+        )
+        assert denied.status_code == 403
+        allowed = await client.post(
+            "/api/v1/evaluations/evaluate",
+            headers=headers,
+            json={**sample_request(), "external_authorized": True},
+        )
+
+    assert allowed.status_code == 200
+    assert allowed.headers["X-Jurissim-Evaluation-Provider"] == "openai"
+    assert allowed.headers["X-Jurissim-Evaluation-Model"] == "gpt-4o-mini"
+
+
+async def test_evaluation_provider_reports_openai_without_exposing_credentials(monkeypatch):
+    monkeypatch.setattr(
+        dependencies,
+        "get_settings",
+        lambda: Settings(
+            service_token=SecretStr("local-internal-secret"),
+            evaluation_provider="openai",
+            openai_api_key=SecretStr("sk-never-return-this"),
+        ),
+    )
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(
+            "/api/v1/evaluations/provider",
+            headers={"Authorization": "Bearer local-internal-secret"},
+        )
+    assert response.status_code == 200
+    assert response.json() == {
+        "data": {
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+            "requires_external_authorization": True,
+        }
+    }
+    assert "sk-never-return-this" not in response.text

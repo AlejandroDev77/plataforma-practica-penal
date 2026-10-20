@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     llm_provider: Literal["disabled", "ollama"] = "disabled"
     llm_model: str | None = None
     simulation_provider: Literal["disabled", "ollama", "openai"] | None = None
+    evaluation_provider: Literal["disabled", "ollama", "openai"] | None = None
     openai_api_key: SecretStr | None = None
     openai_model: str = "gpt-4o-mini"
     openai_timeout_seconds: int = 120
@@ -80,6 +81,8 @@ class Settings(BaseSettings):
             raise ValueError("LLM_MODEL es obligatorio cuando LLM_PROVIDER=ollama.")
         if self.simulation_provider == "ollama" and not self.llm_model:
             raise ValueError("LLM_MODEL es obligatorio cuando SIMULATION_PROVIDER=ollama.")
+        if self.evaluation_provider == "ollama" and not self.llm_model:
+            raise ValueError("LLM_MODEL es obligatorio cuando EVALUATION_PROVIDER=ollama.")
         if not 1 <= self.openai_timeout_seconds <= 300:
             raise ValueError("OPENAI_TIMEOUT_SECONDS debe estar entre 1 y 300 segundos.")
         if not 2_048 <= self.ollama_context_size <= 32_768:
@@ -96,6 +99,16 @@ class Settings(BaseSettings):
     def simulation_generation_model(self) -> str | None:
         return (
             self.openai_model if self.simulation_generation_provider == "openai" else self.llm_model
+        )
+
+    @property
+    def evaluation_generation_provider(self) -> str:
+        return self.evaluation_provider or self.llm_provider
+
+    @property
+    def evaluation_generation_model(self) -> str | None:
+        return (
+            self.openai_model if self.evaluation_generation_provider == "openai" else self.llm_model
         )
 
 
