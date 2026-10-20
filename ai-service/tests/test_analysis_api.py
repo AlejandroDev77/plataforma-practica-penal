@@ -45,7 +45,10 @@ async def test_internal_analysis_endpoint_stays_disabled_without_provider(
     monkeypatch.setattr(
         dependencies,
         "get_settings",
-        lambda: Settings(service_token=SecretStr("local-internal-secret")),
+        lambda: Settings(
+            service_token=SecretStr("local-internal-secret"),
+            analysis_provider="disabled",
+        ),
     )
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
@@ -55,7 +58,73 @@ async def test_internal_analysis_endpoint_stays_disabled_without_provider(
         )
 
     assert response.status_code == 503
-    assert response.json()["detail"]["code"] == "local_model_not_configured"
+    assert response.json()["detail"]["code"] == "analysis_provider_not_configured"
+
+
+async def test_openai_analysis_requires_consent_before_calling_provider(monkeypatch) -> None:
+    monkeypatch.setattr(
+        dependencies,
+        "get_settings",
+        lambda: Settings(
+            service_token=SecretStr("local-internal-secret"),
+            analysis_provider="openai",
+            openai_api_key=SecretStr("synthetic-test-key"),
+        ),
+    )
+
+    class ForbiddenCall:
+        def __init__(self, settings: Settings) -> None:
+            pass
+
+        async def analyze(self, request: AnalysisBatchRequest) -> StructuredCaseAnalysis:
+            raise AssertionError("El proveedor no debe ejecutarse sin consentimiento.")
+
+    monkeypatch.setattr(analysis_route, "OpenAIAnalysisService", ForbiddenCall)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/analysis/analyze",
+            headers={"Authorization": "Bearer local-internal-secret"},
+            json=sample_request(),
+        )
+
+    assert response.status_code == 403
+    assert response.json()["detail"]["code"] == "external_processing_not_authorized"
+
+
+async def test_openai_analysis_returns_provider_metadata_after_explicit_consent(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        dependencies,
+        "get_settings",
+        lambda: Settings(
+            service_token=SecretStr("local-internal-secret"),
+            analysis_provider="openai",
+            openai_api_key=SecretStr("synthetic-test-key"),
+        ),
+    )
+
+    class StubAnalysisService:
+        def __init__(self, settings: Settings) -> None:
+            self.settings = settings
+
+        async def analyze(self, request: AnalysisBatchRequest) -> StructuredCaseAnalysis:
+            assert request.allow_external_processing is True
+            return StructuredCaseAnalysis()
+
+    monkeypatch.setattr(analysis_route, "OpenAIAnalysisService", StubAnalysisService)
+    payload = sample_request()
+    payload["allow_external_processing"] = True
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/analysis/analyze",
+            headers={"Authorization": "Bearer local-internal-secret"},
+            json=payload,
+        )
+
+    assert response.status_code == 200
+    assert response.headers["X-Jurissim-Analysis-Provider"] == "openai"
+    assert response.headers["X-Jurissim-Analysis-Model"] == "gpt-4o-mini"
 
 
 async def test_internal_analysis_endpoint_returns_local_model_metadata(monkeypatch) -> None:

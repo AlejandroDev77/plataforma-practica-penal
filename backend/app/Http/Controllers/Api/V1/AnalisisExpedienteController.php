@@ -35,7 +35,9 @@ final class AnalisisExpedienteController extends Controller
     public function store(SolicitarAnalisisRequest $request, int $expediente): JsonResponse
     {
         $caso = $this->expedientePropio($request, $expediente);
-        $pageIds = $request->validated()['page_ids'];
+        $datos = $request->validated();
+        $pageIds = $datos['page_ids'];
+        $allowExternalProcessing = $datos['allow_external_processing'] ?? false;
         $paginas = PaginaExpediente::query()
             ->whereIn('id_pagina', $pageIds)
             ->whereHas('archivo', fn ($query) => $query->where('id_expediente', $caso->getKey()))
@@ -62,7 +64,7 @@ final class AnalisisExpedienteController extends Controller
             ]);
         }
 
-        $proceso = DB::transaction(function () use ($caso, $pageIds): HistorialProcesamiento {
+        $proceso = DB::transaction(function () use ($caso, $pageIds, $allowExternalProcessing): HistorialProcesamiento {
             $casoBloqueado = Expediente::query()->whereKey($caso->getKey())->lockForUpdate()->firstOrFail();
             $enCurso = $casoBloqueado->procesamientos()
                 ->where('tipo', 'analisis_estructurado')
@@ -75,7 +77,10 @@ final class AnalisisExpedienteController extends Controller
                 'tipo' => 'analisis_estructurado',
                 'estado' => 'pendiente',
                 'intento' => 1,
-                'metadatos' => ['page_ids' => array_values($pageIds)],
+                'metadatos' => [
+                    'page_ids' => array_values($pageIds),
+                    'allow_external_processing' => $allowExternalProcessing,
+                ],
             ]);
         });
 

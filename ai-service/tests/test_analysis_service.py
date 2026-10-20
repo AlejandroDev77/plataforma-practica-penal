@@ -95,6 +95,9 @@ def test_local_provider_is_disabled_by_default() -> None:
 
     assert settings.llm_provider == "disabled"
     assert settings.llm_model is None
+    assert settings.analysis_generation_provider == "openai"
+    local_settings = Settings(llm_provider="ollama", llm_model="qwen3.5:2b-q4_K_M")
+    assert local_settings.analysis_generation_provider == "ollama"
 
 
 def test_local_provider_requires_model_and_loopback_url() -> None:

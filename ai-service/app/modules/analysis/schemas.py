@@ -21,6 +21,7 @@ class SourcePage(StrictModel):
 
 class AnalysisBatchRequest(StrictModel):
     pages: list[SourcePage] = Field(min_length=1, max_length=10)
+    allow_external_processing: bool = False
 
     @model_validator(mode="after")
     def validate_batch(self) -> AnalysisBatchRequest:

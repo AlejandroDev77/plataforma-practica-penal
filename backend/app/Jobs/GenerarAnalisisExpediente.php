@@ -24,7 +24,7 @@ final class GenerarAnalisisExpediente implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 3;
+    public int $tries = 1;
 
     public int $timeout = 600;
 
@@ -97,13 +97,13 @@ final class GenerarAnalisisExpediente implements ShouldQueue
                 'page_number' => $pagina->numero_pagina,
                 'locator' => $pagina->localizador,
                 'text' => $pagina->texto_extraido,
-            ])->all());
+            ])->all(), ($proceso->metadatos['allow_external_processing'] ?? false) === true);
             $response->throw();
 
             $proveedor = trim((string) $response->header('X-Jurissim-Analysis-Provider', ''));
             $modelo = trim((string) $response->header('X-Jurissim-Analysis-Model', ''));
-            if ($proveedor !== 'ollama' || $modelo === '' || mb_strlen($modelo, 'UTF-8') > 150) {
-                throw new UnexpectedValueException('El servicio local no confirmó el proveedor y modelo utilizados.');
+            if (! in_array($proveedor, ['ollama', 'openai'], true) || $modelo === '' || mb_strlen($modelo, 'UTF-8') > 150) {
+                throw new UnexpectedValueException('El servicio de análisis no confirmó el proveedor y modelo utilizados.');
             }
 
             $resultado = $response->json();
@@ -118,7 +118,7 @@ final class GenerarAnalisisExpediente implements ShouldQueue
             $persistir->ejecutar($expediente, $validated['result'], $proceso->getKey(), $proveedor, $modelo);
         } catch (Throwable $exception) {
             HistorialProcesamiento::query()->whereKey($this->procesoId)->where('estado', 'procesando')->update([
-                'mensaje_error' => 'No se pudo completar esta tentativa de análisis local.',
+                'mensaje_error' => 'No se pudo completar esta tentativa de análisis.',
             ]);
 
             throw $exception;
@@ -129,13 +129,13 @@ final class GenerarAnalisisExpediente implements ShouldQueue
     {
         HistorialProcesamiento::query()->whereKey($this->procesoId)->where('estado', '!=', 'procesado')->update([
             'estado' => 'error',
-            'mensaje_error' => 'No se pudo completar el análisis local. Revise las páginas y vuelva a intentarlo.',
+            'mensaje_error' => 'No se pudo completar el análisis. Revise las páginas y vuelva a intentarlo.',
             'fecha_fin' => now(),
         ]);
     }
 
     /** @param list<array{page_id: int, file_id: int, page_number: int, locator: string, text: string}> $paginas */
-    private function requestAnalysis(array $paginas): Response
+    private function requestAnalysis(array $paginas, bool $allowExternalProcessing): Response
     {
         $url = (string) config('services.intelligence.url', '');
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
@@ -154,6 +154,9 @@ final class GenerarAnalisisExpediente implements ShouldQueue
             ->timeout(max(1, (int) config('services.intelligence.timeout', 300)))
             ->withoutRedirecting()
             ->withToken($token)
-            ->post(rtrim($url, '/').'/api/v1/analysis/analyze', ['pages' => $paginas]);
+            ->post(rtrim($url, '/').'/api/v1/analysis/analyze', [
+                'pages' => $paginas,
+                'allow_external_processing' => $allowExternalProcessing,
+            ]);
     }
 }

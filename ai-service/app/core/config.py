@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     page_max_pixels: int = 40_000_000
     llm_provider: Literal["disabled", "ollama"] = "disabled"
     llm_model: str | None = None
+    analysis_provider: Literal["disabled", "ollama", "openai"] | None = None
     simulation_provider: Literal["disabled", "ollama", "openai"] | None = None
     evaluation_provider: Literal["disabled", "ollama", "openai"] | None = None
     openai_api_key: SecretStr | None = None
@@ -79,6 +80,8 @@ class Settings(BaseSettings):
     def validate_local_model_configuration(self) -> Settings:
         if self.llm_provider == "ollama" and not self.llm_model:
             raise ValueError("LLM_MODEL es obligatorio cuando LLM_PROVIDER=ollama.")
+        if self.analysis_provider == "ollama" and not self.llm_model:
+            raise ValueError("LLM_MODEL es obligatorio cuando ANALYSIS_PROVIDER=ollama.")
         if self.simulation_provider == "ollama" and not self.llm_model:
             raise ValueError("LLM_MODEL es obligatorio cuando SIMULATION_PROVIDER=ollama.")
         if self.evaluation_provider == "ollama" and not self.llm_model:
@@ -94,6 +97,12 @@ class Settings(BaseSettings):
     @property
     def simulation_generation_provider(self) -> str:
         return self.simulation_provider or self.llm_provider
+
+    @property
+    def analysis_generation_provider(self) -> str:
+        if self.analysis_provider is not None:
+            return self.analysis_provider
+        return self.llm_provider if self.llm_provider != "disabled" else "openai"
 
     @property
     def simulation_generation_model(self) -> str | None:

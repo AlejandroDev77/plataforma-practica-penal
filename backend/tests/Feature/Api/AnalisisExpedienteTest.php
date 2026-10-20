@@ -89,9 +89,11 @@ class AnalisisExpedienteTest extends TestCase
 
         $response = $this->postJson('/api/v1/expedientes/'.$expediente->getKey().'/analisis', [
             'page_ids' => [$pagina->getKey()],
+            'allow_external_processing' => true,
         ])->assertAccepted()->assertJsonPath('data.status', 'pendiente');
 
         $processId = $response->json('data.process_id');
+        $this->assertTrue(HistorialProcesamiento::query()->findOrFail($processId)->metadatos['allow_external_processing']);
         Queue::assertPushed(GenerarAnalisisExpediente::class, fn (GenerarAnalisisExpediente $job): bool => $job->procesoId === $processId);
         $this->getJson('/api/v1/expedientes/'.$expediente->getKey().'/analisis/procesos/'.$processId)
             ->assertOk()
@@ -101,7 +103,7 @@ class AnalisisExpedienteTest extends TestCase
         $this->getJson('/api/v1/expedientes/'.$expediente->getKey().'/analisis/procesos/'.$processId)->assertNotFound();
     }
 
-    public function test_local_analysis_job_sends_only_selected_pages_and_persists_in_its_process_record(): void
+    public function test_analysis_job_sends_only_selected_pages_and_forwards_external_consent(): void
     {
         config([
             'services.intelligence.url' => 'http://127.0.0.1:8100',
@@ -116,14 +118,17 @@ class AnalisisExpedienteTest extends TestCase
             'tipo' => 'analisis_estructurado',
             'estado' => 'pendiente',
             'intento' => 1,
-            'metadatos' => ['page_ids' => [$pagina->getKey()]],
+            'metadatos' => [
+                'page_ids' => [$pagina->getKey()],
+                'allow_external_processing' => true,
+            ],
         ]);
         $resultado = $this->resultado($pagina, 'ubica a Ana')['result'];
 
         Http::fake([
             'http://127.0.0.1:8100/api/v1/analysis/analyze' => Http::response($resultado, 200, [
-                'X-Jurissim-Analysis-Provider' => 'ollama',
-                'X-Jurissim-Analysis-Model' => 'qwen3.5:2b-q4_K_M',
+                'X-Jurissim-Analysis-Provider' => 'openai',
+                'X-Jurissim-Analysis-Model' => 'gpt-4o-mini',
             ]),
         ]);
 
@@ -136,16 +141,17 @@ class AnalisisExpedienteTest extends TestCase
             'id_analisis' => $procesoGuardado->id_analisis,
             'id_expediente' => $expediente->getKey(),
             'version' => 1,
-            'modelo_ia' => 'qwen3.5:2b-q4_K_M',
+            'modelo_ia' => 'gpt-4o-mini',
             'estado' => 'procesado',
         ]);
-        $this->assertSame('ollama', $procesoGuardado->metadatos['proveedor_ia']);
-        $this->assertSame('qwen3.5:2b-q4_K_M', $procesoGuardado->metadatos['modelo_ia']);
+        $this->assertSame('openai', $procesoGuardado->metadatos['proveedor_ia']);
+        $this->assertSame('gpt-4o-mini', $procesoGuardado->metadatos['modelo_ia']);
         $this->assertDatabaseCount('historial_procesamiento', 1);
         Http::assertSent(fn (ClientRequest $request): bool => $request->url() === 'http://127.0.0.1:8100/api/v1/analysis/analyze'
             && $request->hasHeader('Authorization', 'Bearer token-sintetico')
             && $request->data()['pages'][0]['page_id'] === $pagina->getKey()
-            && $request->data()['pages'][0]['text'] === $text);
+            && $request->data()['pages'][0]['text'] === $text
+            && $request->data()['allow_external_processing'] === true);
         Http::assertSentCount(1);
     }
 
