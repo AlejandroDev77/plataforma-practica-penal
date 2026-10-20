@@ -20,7 +20,7 @@ final readonly class ProponerIntervencionAgente
     ) {}
 
     /** @return array<string, mixed> */
-    public function ejecutar(Simulacion $simulacion): array
+    public function ejecutar(Simulacion $simulacion, bool $autorizarExterno = false): array
     {
         $actual = Simulacion::query()
             ->with(['analisis.revisiones', 'etapaActual'])
@@ -72,6 +72,7 @@ final readonly class ProponerIntervencionAgente
             'actor_role' => $turno['rol'],
             'phase' => Str::limit((string) $actual->etapaActual->nombre, 100, ''),
             'turn_instruction' => $instruccion,
+            'allow_external_processing' => $autorizarExterno,
             'visible_facts' => $hechos,
             'sources' => $fuentes,
             'transcript' => $intervenciones

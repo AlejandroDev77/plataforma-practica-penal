@@ -293,6 +293,12 @@
 .simulation-draft details { margin-top: 12px; padding-top: 10px; border-top: 1px solid #e8e1d0; color: #6f704f; font-size: 9px; }
 .simulation-draft-note { margin-top: 11px; color: #7d755f; font-size: 9px; line-height: 1.6; }
 
+.simulation-proposal-request { display: grid; gap: 12px; margin-top: 14px; }
+.simulation-proposal-request .simulation-composer-note { font-size: 11px; line-height: 1.7; }
+.simulation-proposal-request > .btn { justify-self: start; min-height: 44px; }
+.simulation-external-consent { display: flex; align-items: flex-start; gap: 10px; padding-block: 8px; color: var(--color-ink-700); font-size: 11px; line-height: 1.65; cursor: pointer; }
+.simulation-external-consent input { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--color-ink-900); }
+
 .simulation-advance-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(200px, .7fr) auto;
@@ -315,6 +321,7 @@
 }
 
 @media (max-width: 760px) {
+  .simulation-proposal-request > .btn { width: 100%; justify-self: stretch; }
   .simulation-section { padding: 20px 17px; }
   .simulation-case-list { padding-inline: 16px; }
   .simulation-case-card { grid-template-columns: 36px minmax(0, 1fr); gap: 12px; }

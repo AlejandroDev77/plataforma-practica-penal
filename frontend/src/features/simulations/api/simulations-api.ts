@@ -1,5 +1,5 @@
 import { httpClient } from '../../../shared/api/http-client'
-import type { HearingType, InterventionProposal, PaginatedSimulations, Simulation, SimulationEvaluation } from '../model/simulation'
+import type { HearingType, InterventionProposal, PaginatedSimulations, Simulation, SimulationEvaluation, SimulationGenerationProvider } from '../model/simulation'
 
 export async function listHearingTypes(): Promise<HearingType[]> {
   const response = await httpClient.get<{ data: HearingType[] }>('/api/v1/tipos-audiencia')
@@ -29,8 +29,15 @@ export async function addIntervention(id: number, content: string): Promise<Simu
   return response.data.data
 }
 
-export async function requestInterventionProposal(id: number): Promise<InterventionProposal> {
-  const response = await httpClient.post<{ data: InterventionProposal }>(`/api/v1/simulaciones/${id}/propuesta-intervencion`)
+export async function requestInterventionProposal(id: number, authorizeExternal = false): Promise<InterventionProposal> {
+  const response = await httpClient.post<{ data: InterventionProposal }>(`/api/v1/simulaciones/${id}/propuesta-intervencion`, {
+    allow_external_processing: authorizeExternal,
+  }, { timeout: 330_000 })
+  return response.data.data
+}
+
+export async function getSimulationProvider(id: number): Promise<SimulationGenerationProvider> {
+  const response = await httpClient.get<{ data: SimulationGenerationProvider }>(`/api/v1/simulaciones/${id}/proveedor-generacion`)
   return response.data.data
 }
 

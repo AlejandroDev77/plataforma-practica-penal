@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\AvanzarSimulacionRequest;
 use App\Http\Requests\Api\V1\BuscarRecuperacionExpedienteRequest;
 use App\Http\Requests\Api\V1\CrearSimulacionRequest;
+use App\Http\Requests\Api\V1\ProponerIntervencionRequest;
 use App\Http\Requests\Api\V1\RegistrarIntervencionRequest;
 use App\Http\Resources\Api\V1\SimulacionResource;
 use App\Models\Simulacion;
+use App\Modules\Simulations\Application\Contracts\SimulationAgentGateway;
 use App\Services\Recuperacion\BuscarFuentesSimulacion;
 use App\Services\Simulaciones\AvanzarEtapaAudiencia;
 use App\Services\Simulaciones\CrearSimulacion;
@@ -132,30 +134,52 @@ final class SimulacionController extends Controller
     }
 
     public function proponerIntervencion(
-        Request $request,
+        ProponerIntervencionRequest $request,
         int $simulacion,
         ProponerIntervencionAgente $proponer,
     ): JsonResponse {
         $registro = $request->user()->simulaciones()->whereKey($simulacion)->firstOrFail();
 
         try {
-            return response()->json(['data' => $proponer->ejecutar($registro)]);
+            return response()->json(['data' => $proponer->ejecutar(
+                $registro, (bool) $request->validated('allow_external_processing', false),
+            )]);
         } catch (ConnectionException) {
             return response()->json([
-                'message' => 'El servicio de generación local no está disponible.',
+                'message' => 'El servicio de generación no está disponible.',
             ], 503);
         } catch (RequestException $exception) {
-            $codigo = in_array($exception->response?->status(), [503, 504], true)
+            if ($exception->response?->json('detail.code') === 'external_processing_not_authorized') {
+                throw ValidationException::withMessages([
+                    'allow_external_processing' => 'OpenAI está configurado para esta audiencia. Autorice el envío del contexto de este borrador antes de solicitarlo.',
+                ]);
+            }
+            $codigo = in_array($exception->response?->status(), [429, 503, 504], true)
                 ? $exception->response->status()
                 : 502;
 
             return response()->json([
-                'message' => 'El servicio local no pudo producir una propuesta válida.',
+                'message' => $codigo === 429
+                    ? 'El proveedor rechazó la solicitud por límite de uso o saldo. Revise su cuenta antes de reintentar.'
+                    : 'El proveedor no pudo producir un borrador completo. Revise su configuración y vuelva a intentarlo.',
             ], $codigo);
         } catch (\RuntimeException) {
             return response()->json([
-                'message' => 'El servicio local devolvió una respuesta fuera del contrato esperado.',
+                'message' => 'El proveedor devolvió una respuesta fuera del contrato esperado.',
             ], 502);
+        }
+    }
+
+    public function proveedorGeneracion(
+        Request $request,
+        int $simulacion,
+        SimulationAgentGateway $agente,
+    ): JsonResponse {
+        $request->user()->simulaciones()->whereKey($simulacion)->firstOrFail();
+        try {
+            return response()->json(['data' => $agente->provider()]);
+        } catch (ConnectionException|RequestException|\RuntimeException) {
+            return response()->json(['message' => 'No se pudo consultar el proveedor. Vuelva a intentarlo antes de generar.'], 503);
         }
     }
 

@@ -5,8 +5,9 @@ import { AlertTriangle, ArrowLeft, ArrowRight, Check, Clock3, FileText, RefreshC
 import { PageHeading } from '../../components/ui/AdminUi'
 import { getAuthErrorMessage } from '../../features/auth/api/auth-api'
 import { SimulationEvaluationPanel } from '../../features/simulations/components/SimulationEvaluationPanel'
+import { SimulationProposalRequest } from '../../features/simulations/components/SimulationProposalRequest'
 import { addIntervention, advanceSimulation, requestInterventionProposal } from '../../features/simulations/api/simulations-api'
-import { simulationsQueryKey, useSimulation } from '../../features/simulations/model/use-simulations'
+import { simulationsQueryKey, useSimulation, useSimulationProvider } from '../../features/simulations/model/use-simulations'
 import type { ParticipantRole, SimulationIntervention } from '../../features/simulations/model/simulation'
 import { PracticaRegladaPage } from '../../features/practicas/components/PracticaRegladaPage'
 import { useOrquestacion } from '../../features/practicas/model/use-practicas'
@@ -65,7 +66,8 @@ function LegacySimulationDetailPage() {
   const nextStages = simulation?.current_stage?.allowed_next_stages ?? []
   const canAdvance = simulation?.status === 'activa' && turn?.configured && turn.complete && nextStages.length > 0
 
-  const proposal = useMutation({ mutationFn: () => requestInterventionProposal(id) })
+  const providerQuery = useSimulationProvider(id, Boolean(canAskForProposal))
+  const proposal = useMutation({ mutationFn: (authorized: boolean) => requestInterventionProposal(id, authorized), retry: false })
 
   const saveTurn = useMutation({
     mutationFn: () => addIntervention(id, content.trim()),
@@ -140,7 +142,9 @@ function LegacySimulationDetailPage() {
         {canAskForProposal && <section className="panel simulation-assist-panel" aria-labelledby="assist-title">
           <div className="simulation-panel-heading"><div><p className="eyebrow">APOYO PARA REVISIÓN</p><h2 id="assist-title">Propuesta de intervención</h2></div><Sparkles size={18} aria-hidden="true" /></div>
           <p>Solicite un borrador para revisión humana basado en el contexto autorizado de esta etapa.</p>
-          <button className="btn btn-secondary" disabled={proposal.isPending} onClick={() => proposal.mutate()}>{proposal.isPending ? <><RefreshCw size={15} className="spin" />Preparando…</> : <><Sparkles size={15} />Solicitar borrador</>}</button>
+          {providerQuery.isPending && <p className="simulation-composer-note" role="status">Consultando el proveedor de esta audiencia…</p>}
+          {providerQuery.isError && <div className="simulation-inline-error" role="alert"><p>No se pudo consultar el proveedor. No se envió contenido.</p><button className="text-link" onClick={() => providerQuery.refetch()}>Volver a consultar</button></div>}
+          {!providerQuery.isError && providerQuery.data && <SimulationProposalRequest key={`${id}-${providerQuery.data.provider}`} provider={providerQuery.data} pending={proposal.isPending} onRequest={(authorized) => proposal.mutate(authorized)} />}
           {proposal.isError && <div className="simulation-inline-error" role="alert"><p>{getAuthErrorMessage(proposal.error)}</p><button className="text-link" onClick={() => proposal.reset()}>Cerrar</button></div>}
           {proposal.data && <div className="simulation-draft" aria-live="polite"><p className="simulation-draft-label"><AlertTriangle size={15} />BORRADOR TEMPORAL · NO INCORPORADO AL ACTA</p><p>{proposal.data.proposal.content}</p>{proposal.data.sources.length > 0 && <details><summary>Ver fuentes del borrador ({proposal.data.sources.length})</summary><ul>{proposal.data.sources.map((source) => <li key={source.id}><strong>{source.title ?? 'Fuente consultada'}</strong>{source.locator && <span>{source.locator}</span>}{source.excerpt && <blockquote>{source.excerpt}</blockquote>}</li>)}</ul></details>}<p className="simulation-draft-note">Revise el contenido y las fuentes. Este texto no se guarda ni puede avanzar la etapa.</p></div>}
         </section>}

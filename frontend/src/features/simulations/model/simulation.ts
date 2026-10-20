@@ -85,6 +85,12 @@ export interface InterventionProposal {
   meta: { provider: string | null; model: string | null }
 }
 
+export interface SimulationGenerationProvider {
+  provider: 'disabled' | 'ollama' | 'openai'
+  model: string | null
+  requires_external_authorization: boolean
+}
+
 export type SimulationEvaluationStatus = 'pendiente' | 'procesando' | 'procesado' | 'error'
 
 export interface EvaluationPoint {
