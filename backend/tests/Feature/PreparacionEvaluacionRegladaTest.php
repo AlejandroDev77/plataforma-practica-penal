@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\EvaluarSimulacion;
+use App\Models\ActivacionRubrica;
 use App\Models\Rubrica;
 use App\Models\Simulacion;
 use App\Modules\Simulations\Application\Contracts\AgenteRegladoGateway;
@@ -12,6 +13,8 @@ use App\Services\Simulaciones\MoverPracticaReglada;
 use App\Services\Simulaciones\OrquestadorPracticaReglada;
 use App\Services\Simulaciones\ProponerAgenteReglado;
 use App\Services\Simulaciones\RegistrarDefensaReglada;
+use App\Services\Evaluaciones\GestionarActivacionRubricas;
+use App\Services\Evaluaciones\GestionarRevisionRubricas;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -85,6 +88,37 @@ class PreparacionEvaluacionRegladaTest extends TestCase
         return $m->ejecutar($e['owner'], $s->getKey(), 'finalizar', 'activa', $s->id_etapa_actual);
     }
 
+    private function activarRubrica(array $e): ActivacionRubrica
+    {
+        $autor = \App\Models\User::factory()->create();
+        $revisor = \App\Models\User::factory()->create();
+        $rubrica = Rubrica::create(['nombre' => 'Rúbrica sintética evaluable', 'version' => 1,
+            'id_tipo_audiencia' => $e['type']->getKey(), 'rol_aplicable' => 'abogado_defensor', 'activo' => false]);
+        $rubrica->criterios()->create(['nombre' => 'Criterio sintético', 'descripcion' => 'Sin valor jurídico.',
+            'peso' => 1, 'puntaje_maximo' => 10, 'orden' => 1]);
+        $g = app(GestionarRevisionRubricas::class);
+        $version = $g->sellar($e['admin'], $rubrica->getKey(), 'Copia sintética.', [$autor->getKey()], true);
+        $habilitacion = $g->habilitar($e['admin'], $revisor->getKey(), $version->getKey(), [
+            'alcance' => 'Solo prueba sintética.', 'referencia_acreditacion' => 'Referencia ficticia.',
+            'huella_acreditacion' => str_repeat('c', 64), 'acreditacion_verificada' => true,
+            'fecha_vencimiento' => now()->addDays(2)->toIso8601String(),
+        ]);
+        $revision = $g->revisar($revisor, $version->getKey(), $habilitacion->getKey(), [
+            'decision' => 'aprobado', 'observacion' => 'Revisión sintética sin valor jurídico.',
+            'huella_version_revisada' => $version->huella_contenido, 'id_revision_previa' => null,
+            'confirmacion_humana' => true, 'autoria_revisada' => true,
+            'vigencia_comprobada_en' => now('America/La_Paz')->toDateString(),
+            'fecha_vencimiento' => now()->addDay()->toIso8601String(),
+            'fuentes_verificadas' => [['referencia' => 'Fuente sintética.', 'huella_contenido' => str_repeat('d', 64)]],
+        ]);
+
+        return app(GestionarActivacionRubricas::class)->activar($e['admin'], $version->getKey(), [
+            'motivo' => 'Activación de prueba sintética.', 'confirmacion_humana' => true,
+            'huella_version_esperada' => $version->huella_contenido, 'id_revision_esperada' => $revision->getKey(),
+            'id_activacion_previa' => null,
+        ]);
+    }
+
     public function test_consulta_privada_no_admite_campos_y_no_ejecuta(): void
     {
         $this->getJson($this->ruta(1))->assertUnauthorized()->assertHeader('Cache-Control', 'no-store, private');
@@ -140,6 +174,44 @@ class PreparacionEvaluacionRegladaTest extends TestCase
         $this->assertDatabaseCount('registros_intervenciones_regladas', 3);
         Queue::assertNothingPushed();
         Http::assertNothingSent();
+    }
+
+    public function test_envio_reglado_requiere_huella_y_consenso_explicito_y_persiste_contexto_sellado(): void
+    {
+        $e = $this->escenario();
+        $s = $this->cerrar($e);
+        $this->activarRubrica($e);
+        Sanctum::actingAs($e['owner']);
+
+        $contexto = $this->getJson("/api/v1/practicas-regladas/{$s->getKey()}/contexto-evaluacion")
+            ->assertOk()->assertHeader('Cache-Control', 'no-store, private')->json('data');
+        $this->assertTrue($contexto['can_request']);
+        $this->assertSame('openai', $contexto['provider']);
+        $this->assertSame('Texto.', $contexto['preview']['transcript'][2]['content']);
+        $this->assertSame([], $contexto['blocking_reasons']);
+
+        $ruta = "/api/v1/practicas-regladas/{$s->getKey()}/evaluacion";
+        $this->postJson($ruta, ['confirmar_envio' => false, 'huella_contexto' => $contexto['fingerprint']])->assertUnprocessable();
+        $this->postJson($ruta, ['confirmar_envio' => true, 'huella_contexto' => str_repeat('0', 64)])->assertUnprocessable();
+        $this->assertDatabaseCount('evaluaciones', 0);
+        Queue::assertNothingPushed();
+        Http::assertNothingSent();
+
+        $respuesta = $this->postJson($ruta, ['confirmar_envio' => true, 'huella_contexto' => $contexto['fingerprint']])
+            ->assertAccepted()->assertHeader('Cache-Control', 'no-store, private')->json('data');
+        $this->assertSame('pendiente', $respuesta['status']);
+        $this->assertDatabaseHas('contextos_evaluacion_reglada', [
+            'id_evaluacion' => $respuesta['id'], 'id_usuario_consentimiento' => $e['owner']->getKey(),
+            'proveedor' => 'openai', 'huella_contexto' => $contexto['fingerprint'], 'consentimiento_externo' => true,
+        ]);
+        Queue::assertPushed(EvaluarSimulacion::class, fn (EvaluarSimulacion $job): bool => $job->evaluacionId === $respuesta['id']);
+        Http::assertNothingSent();
+
+        $otro = \App\Models\User::factory()->create();
+        Sanctum::actingAs($otro);
+        $this->getJson("/api/v1/practicas-regladas/{$s->getKey()}/evaluaciones/{$respuesta['id']}")->assertNotFound();
+        $this->expectException(QueryException::class);
+        DB::table('contextos_evaluacion_reglada')->where('id_evaluacion', $respuesta['id'])->update(['consentimiento_externo' => false]);
     }
 
     public function test_sin_rubrica_o_ambiguas_nunca_elige_una_arbitraria(): void

@@ -9,6 +9,42 @@ export async function consultarActa(id: number, signal?: AbortSignal) {
   if (d.id !== id) throw new Error('Acta de otra práctica.')
   return d
 }
+export const contextoEvaluacionSchema = z.object({
+  simulation_id: z.number().int().positive(), can_request: z.boolean(), provider: z.literal('openai'),
+  requires_external_authorization: z.literal(true), blocking_reasons: z.array(z.string()),
+  fingerprint: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
+  activation: z.object({ id_rubrica: z.number().int().positive(), version: z.number().int().positive(),
+    id_version_rubrica: z.number().int().positive(), id_revision_rubrica: z.number().int().positive(),
+    id_activacion_rubrica: z.number().int().positive(), criterion_count: z.number().int().positive() }).nullable(),
+  preview: z.object({ hearing_type: z.string(), user_role: z.literal('abogado_defensor'), rubric_name: z.string(),
+    rubric_version: z.number().int().positive(), criteria: z.array(z.object({ id: z.number().int().positive(),
+      name: z.string(), description: z.string(), weight: z.number(), max_score: z.number() })),
+    transcript: z.array(z.object({ order: z.number().int().positive(), role: z.enum(['juez', 'fiscal', 'abogado_defensor']),
+      content: z.string(), sources: z.array(z.object({ kind: z.enum(['expediente', 'juridica']), title: z.string(),
+        locator: z.string(), excerpt: z.string() })) })) }).nullable(),
+})
+export const evaluacionRegladaSchema = z.object({ id: z.number().int().positive(), status: z.enum(['pendiente', 'procesando', 'procesado', 'error']),
+  score_percent: z.union([z.number(), z.string()]).nullable(), summary: z.string().nullable(),
+  strengths: z.array(z.object({ content: z.string(), evidence: z.object({ intervention_order: z.number(), quote: z.string() }).optional() })).default([]),
+  errors: z.array(z.object({ content: z.string(), evidence: z.object({ intervention_order: z.number(), quote: z.string() }).optional() })).default([]),
+  recommendations: z.array(z.object({ content: z.string() })).default([]), requires_human_review: z.literal(true),
+  message: z.string().nullable(), provider: z.string().nullable(), rubric: z.object({ name: z.string(), version: z.number() }).nullable(),
+  criteria: z.array(z.object({ criterion_id: z.number(), name: z.string(), score: z.number(), max_score: z.number(), feedback: z.string(),
+    strengths: z.array(z.object({ content: z.string(), evidence: z.object({ intervention_order: z.number(), quote: z.string() }) })),
+    errors: z.array(z.object({ content: z.string(), evidence: z.object({ intervention_order: z.number(), quote: z.string() }) })),
+    recommendations: z.array(z.string()) })).optional(), created_at: z.string().nullable(), evaluated_at: z.string().nullable() })
+export async function consultarContextoEvaluacion(id: number, signal?: AbortSignal) {
+  return contextoEvaluacionSchema.parse((await httpClient.get(`${base}/${id}/contexto-evaluacion`, { signal })).data.data)
+}
+export async function consultarEvaluacionReglada(id: number, signal?: AbortSignal) {
+  const value = (await httpClient.get(`${base}/${id}/evaluacion`, { signal })).data.data
+  return value === null ? null : evaluacionRegladaSchema.parse(value)
+}
+export async function solicitarEvaluacionReglada(id: number, fingerprint: string) {
+  return evaluacionRegladaSchema.parse((await httpClient.post(`${base}/${id}/evaluacion`, {
+    confirmar_envio: true, huella_contexto: fingerprint,
+  })).data.data)
+}
 export async function consultarOrquestacion(id: number, signal?: AbortSignal) {
   const r = await httpClient.get<{ data: unknown }>(`${base}/${id}/orquestacion`, { signal })
   return validarOrquestacion(r.data.data, id)

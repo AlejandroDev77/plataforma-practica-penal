@@ -32,21 +32,36 @@ async def evaluate_simulation(
     response: Response,
 ) -> EvaluationEnvelope:
     try:
-        provider = settings.evaluation_generation_provider
-        if provider == "openai":
-            if payload.external_authorized is not True:
-                raise EvaluationServiceError(
-                    "external_consent_required",
-                    "Se requiere consentimiento explícito para enviar el contexto a OpenAI.",
-                    403,
-                )
-            result = await OpenAIEvaluationService(settings).evaluate(payload)
-        elif provider == "ollama":
-            result = await LocalEvaluationService(settings).evaluate(payload)
-        else:
-            # Conserva el diagnóstico histórico y seguro del modo desactivado.
-            result = await LocalEvaluationService(settings).evaluate(payload)
-        response.headers["X-Jurissim-Evaluation-Provider"] = provider
+        result = await LocalEvaluationService(settings).evaluate(payload)
+        response.headers["X-Jurissim-Evaluation-Provider"] = settings.llm_provider
+        response.headers["X-Jurissim-Evaluation-Model"] = settings.llm_model or ""
+        return EvaluationEnvelope(data=result)
+    except EvaluationServiceError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail={"code": error.code, "message": error.message},
+        ) from error
+
+
+@router.post("/evaluate-reglada", response_model=EvaluationEnvelope)
+async def evaluate_regulated_simulation(
+    payload: EvaluationRequest,
+    settings: Annotated[Settings, Depends(require_service_token)],
+    response: Response,
+) -> EvaluationEnvelope:
+    try:
+        if settings.evaluation_generation_provider != "openai":
+            raise EvaluationServiceError(
+                "openai_not_configured", "OpenAI no está configurado para evaluación reglada.", 503
+            )
+        if payload.external_authorized is not True:
+            raise EvaluationServiceError(
+                "external_consent_required",
+                "Se requiere consentimiento explícito para enviar el contexto a OpenAI.",
+                403,
+            )
+        result = await OpenAIEvaluationService(settings).evaluate(payload)
+        response.headers["X-Jurissim-Evaluation-Provider"] = "openai"
         response.headers["X-Jurissim-Evaluation-Model"] = settings.evaluation_generation_model or ""
         return EvaluationEnvelope(data=result)
     except EvaluationServiceError as error:
