@@ -7,10 +7,10 @@ export async function getCaseAnalysis(id: number): Promise<CaseAnalysis | null> 
   return response.data.data
 }
 
-export async function startCaseAnalysis(id: number, pageIds: number[]): Promise<{ process_id: number; status: AnalysisProcessStatus }> {
+export async function startCaseAnalysis(id: number, pageIds: number[], allowExternalProcessing = false): Promise<{ process_id: number; status: AnalysisProcessStatus }> {
   const response = await httpClient.post<{ data: { process_id: number; status: AnalysisProcessStatus } }>(
     `/api/v1/expedientes/${id}/analisis`,
-    { page_ids: pageIds },
+    { page_ids: pageIds, allow_external_processing: allowExternalProcessing },
   )
   return response.data.data
 }

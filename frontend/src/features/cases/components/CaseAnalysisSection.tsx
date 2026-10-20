@@ -84,12 +84,15 @@ export function CaseAnalysisSection({ caseId, selectedPages, onClearSelection }:
   const analysisQuery = useCaseAnalysis(caseId)
   const [processId, setProcessId] = useState<number | null>(() => readStoredProcessId(caseId))
   const [observation, setObservation] = useState('')
+  const [consentedPageFingerprint, setConsentedPageFingerprint] = useState('')
   const processQuery = useCaseAnalysisProcess(caseId, processId)
   const completedProcessId = useRef<number | null>(null)
   const analysis = analysisQuery.data
   const citations = analysis ? citationsOf(analysis) : []
   const citationsVerifiable = citations.length > 0 && citations.every((citation) => citation.available)
   const selectedCharacters = selectedPages.reduce((total, item) => total + item.characters, 0)
+  const selectedPageFingerprint = selectedPages.map((item) => item.id).join(',')
+  const allowExternalProcessing = selectedPages.length > 0 && consentedPageFingerprint === selectedPageFingerprint
   const status = processQuery.data?.status
   const processIsActive = status === 'pendiente' || status === 'procesando'
 
@@ -111,7 +114,11 @@ export function CaseAnalysisSection({ caseId, selectedPages, onClearSelection }:
   }, [caseId, processId])
 
   const generate = useMutation({
-    mutationFn: () => startCaseAnalysis(caseId, selectedPages.map((item) => item.id)),
+    mutationFn: () => {
+      const consent = allowExternalProcessing
+      setConsentedPageFingerprint('')
+      return startCaseAnalysis(caseId, selectedPages.map((item) => item.id), consent)
+    },
     onSuccess: ({ process_id }) => {
       completedProcessId.current = null
       setProcessId(process_id)
@@ -148,8 +155,17 @@ export function CaseAnalysisSection({ caseId, selectedPages, onClearSelection }:
         </span>
         <div className="analysis-local-notice" role="note">
           <ShieldCheck size={15} aria-hidden="true" />
-          <p>La solicitud usa únicamente el servicio Ollama de este equipo. Mantén desactivadas sus funciones en la nube y usa documentos sintéticos hasta acordar el tratamiento de casos reales.</p>
+          <p>Solo se enviarán las páginas seleccionadas al proveedor configurado. Si es OpenAI, el texto saldrá de este equipo. La lectura resultante siempre requiere revisión profesional.</p>
         </div>
+        <label className="analysis-external-consent" htmlFor={`analysis-external-consent-${caseId}`}>
+          <input
+            id={`analysis-external-consent-${caseId}`}
+            type="checkbox"
+            checked={allowExternalProcessing}
+            onChange={(event) => setConsentedPageFingerprint(event.target.checked ? selectedPageFingerprint : '')}
+          />
+          <span>Autorizo enviar estas páginas seleccionadas a OpenAI para su lectura. Esta autorización solo aplica a esta solicitud.</span>
+        </label>
       </div>
       <div className="analysis-request-actions">
         <button className="btn btn-secondary" disabled={selectedPages.length === 0} onClick={onClearSelection}>Limpiar selección</button>

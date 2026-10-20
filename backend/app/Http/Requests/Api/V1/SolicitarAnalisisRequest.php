@@ -19,6 +19,7 @@ final class SolicitarAnalisisRequest extends FormRequest
         return [
             'page_ids' => ['required', 'array', 'min:1', 'max:10'],
             'page_ids.*' => ['required', 'integer', 'min:1', 'distinct'],
+            'allow_external_processing' => ['sometimes', 'boolean'],
         ];
     }
 }

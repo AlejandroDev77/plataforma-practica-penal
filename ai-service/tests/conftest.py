@@ -10,7 +10,7 @@ from app.core.config import Settings
 
 @pytest.fixture(autouse=True)
 def isolate_settings_and_real_http(monkeypatch: pytest.MonkeyPatch) -> None:
-    """La suite no lee credenciales locales ni consume saldo del proveedor."""
+    """Las pruebas no leen credenciales locales ni consumen saldo de proveedores."""
     monkeypatch.setitem(Settings.model_config, "env_file", None)
     for field in Settings.model_fields:
         monkeypatch.delenv(field.upper(), raising=False)

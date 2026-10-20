@@ -106,7 +106,7 @@ class LocalAnalysisService:
         self.transport = transport
 
     async def analyze(self, request: AnalysisBatchRequest) -> StructuredCaseAnalysis:
-        if self.settings.llm_provider != "ollama" or not self.settings.llm_model:
+        if self.settings.analysis_generation_provider != "ollama" or not self.settings.llm_model:
             raise AnalysisServiceError(
                 "local_model_not_configured",
                 "El análisis local está desactivado o no tiene un modelo configurado.",
