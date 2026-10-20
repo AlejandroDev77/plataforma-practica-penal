@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\Api\V1\PracticaRegladaController;
-use App\Http\Controllers\Api\V1\EvaluacionRegladaController;
 use App\Http\Controllers\Api\V1\ContextoEvaluacionRegladaController;
+use App\Http\Controllers\Api\V1\EvaluacionRegladaController;
+use App\Http\Controllers\Api\V1\PracticaRegladaController;
 use App\Http\Controllers\Api\V1\PreparacionEvaluacionRegladaController;
 use App\Http\Middleware\ResponderPracticaReglada;
 use Illuminate\Support\Facades\Route;

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\EvaluacionResource;
 use App\Jobs\EvaluarSimulacion;
-use App\Models\Simulacion;
 use App\Services\Evaluaciones\SolicitarEvaluacionReglada;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,8 +18,8 @@ final class EvaluacionRegladaController extends Controller
     {
         $fila = $request->user()->simulaciones()->whereKey($practica)->firstOrFail()
             ->evaluaciones()->whereIn('id_evaluacion', DB::table('contextos_evaluacion_reglada')
-                ->join('evaluaciones as evaluaciones_contexto', 'evaluaciones_contexto.id_evaluacion', '=', 'contextos_evaluacion_reglada.id_evaluacion')
-                ->where('evaluaciones_contexto.id_simulacion', $practica)->select('contextos_evaluacion_reglada.id_evaluacion'))
+            ->join('evaluaciones as evaluaciones_contexto', 'evaluaciones_contexto.id_evaluacion', '=', 'contextos_evaluacion_reglada.id_evaluacion')
+            ->where('evaluaciones_contexto.id_simulacion', $practica)->select('contextos_evaluacion_reglada.id_evaluacion'))
             ->with(['rubrica', 'resultados.criterio'])->orderByDesc('fecha_creacion')
             ->orderByDesc('id_evaluacion')->first();
 

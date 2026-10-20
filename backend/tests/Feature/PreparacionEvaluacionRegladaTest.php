@@ -6,15 +6,16 @@ use App\Jobs\EvaluarSimulacion;
 use App\Models\ActivacionRubrica;
 use App\Models\Rubrica;
 use App\Models\Simulacion;
+use App\Models\User;
 use App\Modules\Simulations\Application\Contracts\AgenteRegladoGateway;
+use App\Services\Evaluaciones\GestionarActivacionRubricas;
+use App\Services\Evaluaciones\GestionarRevisionRubricas;
 use App\Services\Simulaciones\ConfirmarAgenteReglado;
 use App\Services\Simulaciones\GestionarActivacionReglas;
 use App\Services\Simulaciones\MoverPracticaReglada;
 use App\Services\Simulaciones\OrquestadorPracticaReglada;
 use App\Services\Simulaciones\ProponerAgenteReglado;
 use App\Services\Simulaciones\RegistrarDefensaReglada;
-use App\Services\Evaluaciones\GestionarActivacionRubricas;
-use App\Services\Evaluaciones\GestionarRevisionRubricas;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -90,8 +91,8 @@ class PreparacionEvaluacionRegladaTest extends TestCase
 
     private function activarRubrica(array $e): ActivacionRubrica
     {
-        $autor = \App\Models\User::factory()->create();
-        $revisor = \App\Models\User::factory()->create();
+        $autor = User::factory()->create();
+        $revisor = User::factory()->create();
         $rubrica = Rubrica::create(['nombre' => 'Rúbrica sintética evaluable', 'version' => 1,
             'id_tipo_audiencia' => $e['type']->getKey(), 'rol_aplicable' => 'abogado_defensor', 'activo' => false]);
         $rubrica->criterios()->create(['nombre' => 'Criterio sintético', 'descripcion' => 'Sin valor jurídico.',
@@ -208,7 +209,7 @@ class PreparacionEvaluacionRegladaTest extends TestCase
         Queue::assertPushed(EvaluarSimulacion::class, fn (EvaluarSimulacion $job): bool => $job->evaluacionId === $respuesta['id']);
         Http::assertNothingSent();
 
-        $otro = \App\Models\User::factory()->create();
+        $otro = User::factory()->create();
         Sanctum::actingAs($otro);
         $this->getJson("/api/v1/practicas-regladas/{$s->getKey()}/evaluaciones/{$respuesta['id']}")->assertNotFound();
         $this->expectException(QueryException::class);

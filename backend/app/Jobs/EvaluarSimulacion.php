@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Models\Evaluacion;
 use App\Models\ContextoEvaluacionReglada;
+use App\Models\Evaluacion;
 use App\Models\Intervencion;
 use App\Models\Simulacion;
 use App\Models\VinculacionReglasPractica;
@@ -104,41 +104,41 @@ final class EvaluarSimulacion implements ShouldQueue
                 $transcripcion = $request['transcript'] ?? [];
             } else {
                 $intervenciones = $simulacion->intervenciones()
-                ->with(['participante', 'fuentes'])
-                ->orderBy('orden')
-                ->get();
-            $transcripcion = $intervenciones
-                ->filter(fn (Intervencion $intervencion): bool => in_array(
-                    $intervencion->participante?->rol,
-                    ['abogado_defensor', 'juez', 'fiscal'],
-                    true,
-                ))
-                ->map(fn (Intervencion $intervencion): array => [
-                    'order' => (int) $intervencion->orden,
-                    'role' => $intervencion->participante->rol,
-                    'content' => trim((string) $intervencion->contenido),
-                    'sources' => $intervencion->participante->rol !== 'abogado_defensor'
-                        ? []
-                        : $intervencion->fuentes->take(10)
-                            ->map(function ($fuente): array {
-                                $metadatos = is_array($fuente->metadatos) ? $fuente->metadatos : [];
-                                $tipo = $metadatos['tipo_fuente'] ?? null;
-                                if (! in_array($tipo, ['expediente', 'juridica'], true)) {
-                                    throw new UnexpectedValueException('Una fuente de intervención no tiene un tipo verificable.');
-                                }
+                    ->with(['participante', 'fuentes'])
+                    ->orderBy('orden')
+                    ->get();
+                $transcripcion = $intervenciones
+                    ->filter(fn (Intervencion $intervencion): bool => in_array(
+                        $intervencion->participante?->rol,
+                        ['abogado_defensor', 'juez', 'fiscal'],
+                        true,
+                    ))
+                    ->map(fn (Intervencion $intervencion): array => [
+                        'order' => (int) $intervencion->orden,
+                        'role' => $intervencion->participante->rol,
+                        'content' => trim((string) $intervencion->contenido),
+                        'sources' => $intervencion->participante->rol !== 'abogado_defensor'
+                            ? []
+                            : $intervencion->fuentes->take(10)
+                                ->map(function ($fuente): array {
+                                    $metadatos = is_array($fuente->metadatos) ? $fuente->metadatos : [];
+                                    $tipo = $metadatos['tipo_fuente'] ?? null;
+                                    if (! in_array($tipo, ['expediente', 'juridica'], true)) {
+                                        throw new UnexpectedValueException('Una fuente de intervención no tiene un tipo verificable.');
+                                    }
 
-                                return [
-                                    'kind' => $tipo,
-                                    'title' => mb_substr(trim((string) ($metadatos['titulo'] ?? 'Fuente validada')) ?: 'Fuente validada', 0, 300),
-                                    'locator' => mb_substr(trim((string) ($metadatos['localizador'] ?? 'Referencia')) ?: 'Referencia', 0, 200),
-                                    'excerpt' => mb_substr(trim((string) $fuente->fragmento_utilizado), 0, 1_000),
-                                ];
-                            })
-                            ->values()
-                            ->all(),
-                ])
-                ->values()
-                ->all();
+                                    return [
+                                        'kind' => $tipo,
+                                        'title' => mb_substr(trim((string) ($metadatos['titulo'] ?? 'Fuente validada')) ?: 'Fuente validada', 0, 300),
+                                        'locator' => mb_substr(trim((string) ($metadatos['localizador'] ?? 'Referencia')) ?: 'Referencia', 0, 200),
+                                        'excerpt' => mb_substr(trim((string) $fuente->fragmento_utilizado), 0, 1_000),
+                                    ];
+                                })
+                                ->values()
+                                ->all(),
+                    ])
+                    ->values()
+                    ->all();
 
                 if ($transcripcion === [] || count($transcripcion) > 40
                     || ! collect($transcripcion)->contains(fn (array $turno): bool => $turno['role'] === 'abogado_defensor')) {

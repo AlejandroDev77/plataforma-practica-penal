@@ -64,6 +64,7 @@ final readonly class PrepararContextoEvaluacionReglada
                 $rol = $turno->participante?->rol;
                 if (! in_array($rol, ['abogado_defensor', 'juez', 'fiscal'], true)) {
                     $bloqueos[] = 'intervencion_incompatible';
+
                     continue;
                 }
                 $texto = trim((string) $turno->contenido);

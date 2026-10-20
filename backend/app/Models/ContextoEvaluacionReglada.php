@@ -28,7 +28,7 @@ final class ContextoEvaluacionReglada extends ModeloDominio
 
     protected static function booted(): void
     {
-        static::updating(fn () => throw new LogicException('El contexto consentido no se edita.'));
-        static::deleting(fn () => throw new LogicException('El contexto consentido no se elimina.'));
+        self::updating(fn () => throw new LogicException('El contexto consentido no se edita.'));
+        self::deleting(fn () => throw new LogicException('El contexto consentido no se elimina.'));
     }
 }
