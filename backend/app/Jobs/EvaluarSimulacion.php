@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Evaluacion;
 use App\Models\Intervencion;
 use App\Models\Simulacion;
+use App\Models\VinculacionReglasPractica;
 use App\Services\Analisis\CitasAnalisis;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -57,6 +58,9 @@ final class EvaluarSimulacion implements ShouldQueue
                 ->with('tipoAudiencia')
                 ->whereKey($evaluacion->id_simulacion)
                 ->firstOrFail();
+            if (VinculacionReglasPractica::query()->where('id_simulacion', $simulacion->getKey())->exists()) {
+                throw new UnexpectedValueException('Una práctica reglada no puede procesarse mediante el evaluador anterior.');
+            }
             if ($simulacion->estado !== 'finalizada') {
                 throw new UnexpectedValueException('La simulación dejó de estar finalizada.');
             }

@@ -1,0 +1,4 @@
+/* Mismo sistema papel/tinta; permitir reflujo del título y contexto ampliados. */
+.reglas-activacion { min-width: 0; overflow-wrap: anywhere; }
+.reglas-activacion .reglas-decision-head > div { min-width: 0; }
+.modal:has(.reglas-activacion-form) .modal-head > div { min-width: 0; overflow-wrap: anywhere; }

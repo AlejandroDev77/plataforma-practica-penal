@@ -5,6 +5,12 @@ Estado: el motor de audiencia y sus turnos configurables están integrados media
 ## Objetivo
 Controlar la audiencia; el LLM NO controla el flujo completo.
 
+## Versiones para revisión de reglas
+
+El [sellado de versiones](14-versiones-reglas-audiencia.md) conserva tipo, etapas, transiciones, propuestas y turnos de referencia en una instantánea inmutable, con numeración por audiencia, autor, fecha y huella calculada por PostgreSQL. No aprueba, activa ni ejecuta reglas; el criterio adoptado exige revisión por una persona habilitada, independiente de la autoría.
+
+La [capa interna de revisión jurídica](15-revision-juridica-reglas.md) registra habilitaciones acotadas, decisiones sobre versiones exactas y revocaciones inmutables. No asigna roles ni habilita la ejecución del orquestador. La [API de gobierno de reglas](16-api-revision-reglas.md) expone esas operaciones con acceso por ámbito y precondiciones; la interfaz y la activación siguen siendo hitos separados. No se han concedido habilitaciones reales durante su implementación.
+
 ## Componentes
 
 ```text
@@ -41,7 +47,7 @@ La tabla `turnos_etapa_audiencia` define una secuencia finita por etapa; cada fi
 
 No se han cargado secuencias jurídicas iniciales a propósito. Antes de configurar una audiencia, un equipo jurídico debe definir y revisar el orden y los roles para el caso de uso aplicable. Turnos que correspondan a agentes aún no implementados no deben activarse: la fase de generación deberá registrar esos turnos desde el servidor.
 
-La consola administrativa puede conservar propuestas de turnos en `propuestas_turnos_audiencia`, separadas de `turnos_etapa_audiencia`. Solo `administrador_plataforma` puede consultarlas o prepararlas; este permiso es técnico y no representa competencia jurídica. El endpoint fija el estado en `borrador`, ignora campos de estado/autor enviados por el cliente y no ofrece una operación de aprobación ni activación. Estas propuestas no se incluyen en instantáneas ni alteran simulaciones. No se precarga contenido jurídico. Definir quién revisará y aprobará reglas, y cómo una regla aprobada llegará al catálogo activo, queda pendiente de decisión y revisión profesional.
+La consola administrativa puede conservar propuestas de turnos en `propuestas_turnos_audiencia`, separadas de `turnos_etapa_audiencia`. Solo `administrador_plataforma` puede consultarlas o prepararlas; este permiso es técnico y no representa competencia jurídica. El endpoint fija el estado en `borrador`, ignora campos de estado/autor enviados por el cliente y no ofrece una operación de aprobación ni activación. Las propuestas se conservan en versiones selladas para revisión, pero no se incorporan a las instantáneas ejecutables de simulaciones ni las alteran. No se precarga contenido jurídico. La API de revisión exige una persona habilitada e independiente; acreditar revisores reales y pasar reglas revisadas al catálogo activo siguen siendo tareas separadas.
 
 ### Propuesta Laravel de intervención
 

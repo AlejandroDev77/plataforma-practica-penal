@@ -11,6 +11,9 @@ export const SettingsPage = lazy(() => import('../pages/admin/SettingsPage').the
 export const RolesPage = lazy(() => import('../pages/admin/RolesPage').then((module) => ({ default: module.RolesPage })))
 export const ActivityPage = lazy(() => import('../pages/admin/ActivityPage').then((module) => ({ default: module.ActivityPage })))
 export const PropuestasTurnosPage = lazy(() => import('../pages/admin/PropuestasTurnosPage').then((module) => ({ default: module.PropuestasTurnosPage })))
+export const ReglasAudienciaPage = lazy(() => import('../pages/admin/ReglasAudienciaPage').then((module) => ({ default: module.ReglasAudienciaPage })))
+export const VersionReglasPage = lazy(() => import('../pages/admin/VersionReglasPage').then((module) => ({ default: module.VersionReglasPage })))
+export const RevisionReglasLayout = lazy(() => import('../layouts/RevisionReglasLayout').then((module) => ({ default: module.RevisionReglasLayout })))
 export const NotFoundPage = lazy(() => import('../pages/errors/NotFoundPage').then((module) => ({ default: module.NotFoundPage })))
 
 export function RouteLoading() {

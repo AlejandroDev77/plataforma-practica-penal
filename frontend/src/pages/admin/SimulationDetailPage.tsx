@@ -8,6 +8,10 @@ import { SimulationEvaluationPanel } from '../../features/simulations/components
 import { addIntervention, advanceSimulation, requestInterventionProposal } from '../../features/simulations/api/simulations-api'
 import { simulationsQueryKey, useSimulation } from '../../features/simulations/model/use-simulations'
 import type { ParticipantRole, SimulationIntervention } from '../../features/simulations/model/simulation'
+import { PracticaRegladaPage } from '../../features/practicas/components/PracticaRegladaPage'
+import { useOrquestacion } from '../../features/practicas/model/use-practicas'
+import { errorPractica } from '../../features/practicas/api/practicas-api'
+import { useCurrentUser } from '../../features/auth/model/use-current-user'
 import '../../features/simulations/simulations.css'
 
 const roleLabel: Record<string, string> = {
@@ -46,7 +50,7 @@ function InterventionCard({ intervention, currentStageId }: { intervention: Simu
   </article>
 }
 
-export function SimulationDetailPage() {
+function LegacySimulationDetailPage() {
   const rawId = useParams().id
   const id = Number(rawId)
   const queryClient = useQueryClient()
@@ -155,4 +159,15 @@ export function SimulationDetailPage() {
       <SimulationEvaluationPanel simulationId={id} />
     </>}
   </>
+}
+
+export function SimulationDetailPage() {
+  const id = Number(useParams().id)
+  const usuario = useCurrentUser().data?.id
+  const consulta = useOrquestacion(id)
+  if (!Number.isSafeInteger(id) || id < 1) return <div className="empty-state"><h1>Práctica no disponible</h1><p>La referencia no es válida.</p><Link to="/audiencias">Volver a audiencias</Link></div>
+  if (consulta.isPending) return <div className="empty-state" role="status">Consultando práctica…</div>
+  if (consulta.isError || !consulta.data) return <div className="empty-state" role="alert"><h1>No se pudo consultar la práctica</h1><p>{errorPractica(consulta.error)}</p><button className="btn btn-secondary" disabled={consulta.isFetching} onClick={() => void consulta.refetch()}>Reintentar consulta</button><Link to="/audiencias">Volver a audiencias</Link></div>
+  if (consulta.data.binding_status === 'sin_vinculacion') return <LegacySimulationDetailPage key={`${usuario}-${id}`} />
+  return <PracticaRegladaPage key={`${usuario}-${id}`} id={id} consulta={consulta.data} />
 }

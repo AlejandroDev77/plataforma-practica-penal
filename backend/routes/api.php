@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\CurrentUserController;
 use App\Http\Controllers\Api\V1\EvaluacionSimulacionController;
 use App\Http\Controllers\Api\V1\ExpedienteArchivoController;
 use App\Http\Controllers\Api\V1\ExpedienteController;
+use App\Http\Controllers\Api\V1\GobiernoReglasAudienciaController;
 use App\Http\Controllers\Api\V1\LoginController;
 use App\Http\Controllers\Api\V1\LogoutController;
 use App\Http\Controllers\Api\V1\PasswordResetLinkController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Api\V1\ResetPasswordController;
 use App\Http\Controllers\Api\V1\SimulacionController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
 use App\Http\Controllers\Api\V1\TipoAudienciaController;
+use App\Http\Middleware\NoAlmacenarReglas;
 use App\Http\Middleware\VerificarTokenServicioInterno;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +53,25 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/recuperacion-juridica', [RecuperacionJuridicaController::class, 'search']);
 
         Route::get('/tipos-audiencia', [TipoAudienciaController::class, 'index']);
+        Route::prefix('reglas-audiencia')->middleware(NoAlmacenarReglas::class)->group(function (): void {
+            Route::get('/tipos/{tipo}/preparacion-instrucciones', [GobiernoReglasAudienciaController::class, 'prepararInstrucciones'])->whereNumber('tipo')->middleware('throttle:10,1');
+            Route::get('/versiones', [GobiernoReglasAudienciaController::class, 'index']);
+            Route::get('/versiones/{version}', [GobiernoReglasAudienciaController::class, 'show'])->whereNumber('version');
+            Route::get('/versiones/{version}/revisiones', [GobiernoReglasAudienciaController::class, 'indexRevisiones'])->whereNumber('version');
+            Route::get('/versiones/{version}/preparacion-activacion', [GobiernoReglasAudienciaController::class, 'prepararActivacion'])->whereNumber('version')->middleware('throttle:10,1');
+            Route::get('/tipos/{tipo}/activaciones', [GobiernoReglasAudienciaController::class, 'indexActivaciones'])->whereNumber('tipo');
+            Route::get('/habilitaciones', [GobiernoReglasAudienciaController::class, 'indexHabilitaciones']);
+            Route::get('/habilitaciones/{habilitacion}', [GobiernoReglasAudienciaController::class, 'showHabilitacion'])->whereNumber('habilitacion');
+            Route::middleware('throttle:10,1')->group(function (): void {
+                Route::post('/tipos/{tipo}/versiones', [GobiernoReglasAudienciaController::class, 'storeVersion'])->whereNumber('tipo');
+                Route::post('/habilitaciones', [GobiernoReglasAudienciaController::class, 'storeHabilitacion']);
+                Route::post('/habilitaciones/{habilitacion}/revocaciones', [GobiernoReglasAudienciaController::class, 'revokeHabilitacion'])->whereNumber('habilitacion');
+                Route::post('/versiones/{version}/revisiones', [GobiernoReglasAudienciaController::class, 'storeRevision'])->whereNumber('version');
+                Route::post('/revisiones/{revision}/revocaciones', [GobiernoReglasAudienciaController::class, 'revokeRevision'])->whereNumber('revision');
+                Route::post('/versiones/{version}/activaciones', [GobiernoReglasAudienciaController::class, 'storeActivacion'])->whereNumber('version');
+                Route::post('/activaciones/{activacion}/revocaciones', [GobiernoReglasAudienciaController::class, 'revokeActivacion'])->whereNumber('activacion');
+            });
+        });
         Route::get('/administracion/propuestas-turnos', [PropuestaTurnoAudienciaController::class, 'index']);
         Route::post('/administracion/propuestas-turnos', [PropuestaTurnoAudienciaController::class, 'store']);
         Route::put('/administracion/propuestas-turnos/{propuesta}', [PropuestaTurnoAudienciaController::class, 'update']);
@@ -74,3 +95,5 @@ Route::prefix('internal/v1')->middleware(VerificarTokenServicioInterno::class)->
     Route::post('/expedientes/{expediente}/analisis', [AnalisisInternoController::class, 'store']);
     Route::post('/fuentes-juridicas/{fuente}/indexar', [RecuperacionInternaController::class, 'indexarFuenteJuridica']);
 });
+
+require __DIR__.'/practicas-regladas.php';

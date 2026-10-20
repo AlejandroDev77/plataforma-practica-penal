@@ -5,6 +5,7 @@ namespace App\Services\Evaluaciones;
 use App\Models\Evaluacion;
 use App\Models\Rubrica;
 use App\Models\Simulacion;
+use App\Models\VinculacionReglasPractica;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +19,12 @@ final class SolicitarEvaluacion
                 ->whereKey($simulacion->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if (VinculacionReglasPractica::query()->where('id_simulacion', $actual->getKey())->exists()) {
+                throw ValidationException::withMessages([
+                    'simulacion' => 'La evaluación del circuito reglado requiere su propia revisión de rúbrica e integración; no use el evaluador anterior.',
+                ]);
+            }
 
             if ($actual->estado !== 'finalizada') {
                 throw ValidationException::withMessages([

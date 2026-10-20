@@ -7,7 +7,7 @@ import { useCurrentUser } from '../model/use-current-user'
 
 const administrativeRoles = new Set(['administrador_plataforma', 'administrador_institucional'])
 
-export function RequireAuthentication() {
+export function RequireAuthentication({ administrativeOnly = true }: { administrativeOnly?: boolean }) {
   const location = useLocation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -65,7 +65,7 @@ export function RequireAuthentication() {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  if (!user.roles.some((role) => administrativeRoles.has(role))) {
+  if (administrativeOnly && !user.roles.some((role) => administrativeRoles.has(role))) {
     return (
       <main className="auth-state">
         <section className="auth-state-panel" aria-labelledby="auth-permission-title">
