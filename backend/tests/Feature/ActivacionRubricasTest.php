@@ -288,11 +288,14 @@ class ActivacionRubricasTest extends TestCase
 
     public function test_rollback_vacio_preserva_revision_y_permite_reaplicar(): void
     {
+        $contextos = require database_path('migrations/2026_10_20_000001_persistir_contextos_evaluacion_reglada.php');
         $m = require database_path('migrations/2026_10_06_000002_activar_copias_rubricas.php');
+        $contextos->down();
         $m->down();
         $this->assertFalse(Schema::hasTable('activaciones_rubricas'));
         $this->assertTrue(Schema::hasTable('versiones_rubricas_evaluacion'));
         $m->up();
+        $contextos->up();
         $e = $this->datos();
         $this->activarRubrica($e);
         $this->assertSame('vigente', $this->consulta($e)['estado_activacion']);

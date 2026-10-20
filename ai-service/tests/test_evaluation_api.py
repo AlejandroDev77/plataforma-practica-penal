@@ -167,11 +167,11 @@ async def test_openai_evaluation_requires_external_consent_before_service_call(m
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         headers = {"Authorization": "Bearer local-internal-secret"}
         denied = await client.post(
-            "/api/v1/evaluations/evaluate", headers=headers, json=sample_request()
+            "/api/v1/evaluations/evaluate-reglada", headers=headers, json=sample_request()
         )
         assert denied.status_code == 403
         allowed = await client.post(
-            "/api/v1/evaluations/evaluate",
+            "/api/v1/evaluations/evaluate-reglada",
             headers=headers,
             json={**sample_request(), "external_authorized": True},
         )

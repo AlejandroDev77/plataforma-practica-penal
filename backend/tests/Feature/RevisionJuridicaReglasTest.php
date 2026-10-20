@@ -364,8 +364,10 @@ class RevisionJuridicaReglasTest extends TestCase
 
     public function test_rollback_preserva_historial_y_solo_revierte_tablas_vacias(): void
     {
+        $contextos = require database_path('migrations/2026_10_20_000001_persistir_contextos_evaluacion_reglada.php');
         $activacionesRubricas = require database_path('migrations/2026_10_06_000002_activar_copias_rubricas.php');
         $rubricas = require database_path('migrations/2026_10_06_000001_versionar_revision_rubricas.php');
+        $contextos->down();
         $activacionesRubricas->down();
         $rubricas->down();
         $movimientos = require database_path('migrations/2026_10_04_000003_registrar_movimientos_practicas.php');
@@ -389,6 +391,7 @@ class RevisionJuridicaReglasTest extends TestCase
         $agentes->up();
         $rubricas->up();
         $activacionesRubricas->up();
+        $contextos->up();
         [$admin, $revisor, $version] = $this->escenario();
         $this->habilitar($admin, $revisor, $version);
         $this->rechazo(RuntimeException::class, fn () => $migracion->down());

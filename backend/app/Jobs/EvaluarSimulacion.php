@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\ContextoEvaluacionReglada;
 use App\Models\Evaluacion;
 use App\Models\Intervencion;
 use App\Models\Simulacion;
@@ -28,7 +29,10 @@ final class EvaluarSimulacion implements ShouldQueue
 
     public int $timeout = 600;
 
-    public function __construct(public int $evaluacionId) {}
+    public function __construct(public int $evaluacionId, int $intentos = 3)
+    {
+        $this->tries = $intentos;
+    }
 
     /** @return list<int> */
     public function backoff(): array
@@ -53,12 +57,16 @@ final class EvaluarSimulacion implements ShouldQueue
             return;
         }
 
+        $reglada = false;
         try {
             $simulacion = Simulacion::query()
                 ->with('tipoAudiencia')
                 ->whereKey($evaluacion->id_simulacion)
                 ->firstOrFail();
-            if (VinculacionReglasPractica::query()->where('id_simulacion', $simulacion->getKey())->exists()) {
+            $contexto = ContextoEvaluacionReglada::query()->where('id_evaluacion', $evaluacion->getKey())->first();
+            $reglada = $contexto !== null;
+            $vinculada = VinculacionReglasPractica::query()->where('id_simulacion', $simulacion->getKey())->exists();
+            if ($vinculada !== $reglada) {
                 throw new UnexpectedValueException('Una práctica reglada no puede procesarse mediante el evaluador anterior.');
             }
             if ($simulacion->estado !== 'finalizada') {
@@ -72,62 +80,86 @@ final class EvaluarSimulacion implements ShouldQueue
                 throw new UnexpectedValueException('La evaluación no conserva una rúbrica válida.');
             }
 
-            $intervenciones = $simulacion->intervenciones()
-                ->with(['participante', 'fuentes'])
-                ->orderBy('orden')
-                ->get();
-            $transcripcion = $intervenciones
-                ->filter(fn (Intervencion $intervencion): bool => in_array(
-                    $intervencion->participante?->rol,
-                    ['abogado_defensor', 'juez', 'fiscal'],
-                    true,
-                ))
-                ->map(fn (Intervencion $intervencion): array => [
-                    'order' => (int) $intervencion->orden,
-                    'role' => $intervencion->participante->rol,
-                    'content' => trim((string) $intervencion->contenido),
-                    'sources' => $intervencion->participante->rol !== 'abogado_defensor'
-                        ? []
-                        : $intervencion->fuentes->take(10)
-                            ->map(function ($fuente): array {
-                                $metadatos = is_array($fuente->metadatos) ? $fuente->metadatos : [];
-                                $tipo = $metadatos['tipo_fuente'] ?? null;
-                                if (! in_array($tipo, ['expediente', 'juridica'], true)) {
-                                    throw new UnexpectedValueException('Una fuente de intervención no tiene un tipo verificable.');
-                                }
+            if ($reglada) {
+                $estado = DB::selectOne('SELECT jurissim_estado_activacion_rubrica(?) activacion, jurissim_estado_revision_rubrica(?) revision',
+                    [$contexto->id_activacion_rubrica, $contexto->id_version_rubrica]);
+                $contenido = is_array($contexto->contenido) ? $contexto->contenido : [];
+                if ($contexto->proveedor !== 'openai' || $contexto->consentimiento_externo !== true
+                    || $estado->activacion !== 'vigente' || $estado->revision !== 'aprobado'
+                    || ! hash_equals($contexto->huella_contexto, $this->huellaCanonica([
+                        'provider' => 'openai', 'user_id' => (int) $contexto->id_usuario_consentimiento,
+                        'activation' => [
+                            'id_rubrica' => (int) $contexto->id_rubrica,
+                            'version' => (int) ($contenido['rubric_version'] ?? 0),
+                            'criterion_count' => count($contenido['criteria'] ?? []),
+                            'id_version_rubrica' => (int) $contexto->id_version_rubrica,
+                            'id_revision_rubrica' => (int) $contexto->id_revision_rubrica,
+                            'id_activacion_rubrica' => (int) $contexto->id_activacion_rubrica,
+                        ],
+                        'request' => $contenido,
+                    ]))) {
+                    throw new UnexpectedValueException('El consentimiento o contexto de evaluación ya no es vigente.');
+                }
+                $request = [...$contenido, 'external_authorized' => true];
+                $transcripcion = $request['transcript'] ?? [];
+            } else {
+                $intervenciones = $simulacion->intervenciones()
+                    ->with(['participante', 'fuentes'])
+                    ->orderBy('orden')
+                    ->get();
+                $transcripcion = $intervenciones
+                    ->filter(fn (Intervencion $intervencion): bool => in_array(
+                        $intervencion->participante?->rol,
+                        ['abogado_defensor', 'juez', 'fiscal'],
+                        true,
+                    ))
+                    ->map(fn (Intervencion $intervencion): array => [
+                        'order' => (int) $intervencion->orden,
+                        'role' => $intervencion->participante->rol,
+                        'content' => trim((string) $intervencion->contenido),
+                        'sources' => $intervencion->participante->rol !== 'abogado_defensor'
+                            ? []
+                            : $intervencion->fuentes->take(10)
+                                ->map(function ($fuente): array {
+                                    $metadatos = is_array($fuente->metadatos) ? $fuente->metadatos : [];
+                                    $tipo = $metadatos['tipo_fuente'] ?? null;
+                                    if (! in_array($tipo, ['expediente', 'juridica'], true)) {
+                                        throw new UnexpectedValueException('Una fuente de intervención no tiene un tipo verificable.');
+                                    }
 
-                                return [
-                                    'kind' => $tipo,
-                                    'title' => mb_substr(trim((string) ($metadatos['titulo'] ?? 'Fuente validada')) ?: 'Fuente validada', 0, 300),
-                                    'locator' => mb_substr(trim((string) ($metadatos['localizador'] ?? 'Referencia')) ?: 'Referencia', 0, 200),
-                                    'excerpt' => mb_substr(trim((string) $fuente->fragmento_utilizado), 0, 1_000),
-                                ];
-                            })
-                            ->values()
-                            ->all(),
-                ])
-                ->values()
-                ->all();
+                                    return [
+                                        'kind' => $tipo,
+                                        'title' => mb_substr(trim((string) ($metadatos['titulo'] ?? 'Fuente validada')) ?: 'Fuente validada', 0, 300),
+                                        'locator' => mb_substr(trim((string) ($metadatos['localizador'] ?? 'Referencia')) ?: 'Referencia', 0, 200),
+                                        'excerpt' => mb_substr(trim((string) $fuente->fragmento_utilizado), 0, 1_000),
+                                    ];
+                                })
+                                ->values()
+                                ->all(),
+                    ])
+                    ->values()
+                    ->all();
 
-            if ($transcripcion === [] || count($transcripcion) > 40
-                || ! collect($transcripcion)->contains(fn (array $turno): bool => $turno['role'] === 'abogado_defensor')) {
-                throw new UnexpectedValueException('La transcripción no cumple los límites de evaluación.');
+                if ($transcripcion === [] || count($transcripcion) > 40
+                    || ! collect($transcripcion)->contains(fn (array $turno): bool => $turno['role'] === 'abogado_defensor')) {
+                    throw new UnexpectedValueException('La transcripción no cumple los límites de evaluación.');
+                }
+
+                $request = [
+                    'hearing_type' => (string) ($simulacion->tipoAudiencia?->nombre ?? 'Audiencia'),
+                    'user_role' => $simulacion->rol_usuario,
+                    'rubric_name' => (string) ($rubrica['name'] ?? ''),
+                    'rubric_version' => (int) ($rubrica['version'] ?? 0),
+                    'criteria' => $criterios,
+                    'transcript' => $transcripcion,
+                ];
             }
-
-            $request = [
-                'hearing_type' => (string) ($simulacion->tipoAudiencia?->nombre ?? 'Audiencia'),
-                'user_role' => $simulacion->rol_usuario,
-                'rubric_name' => (string) ($rubrica['name'] ?? ''),
-                'rubric_version' => (int) ($rubrica['version'] ?? 0),
-                'criteria' => $criterios,
-                'transcript' => $transcripcion,
-            ];
-            $response = $this->requestEvaluation($request);
+            $response = $this->requestEvaluation($request, $reglada);
             $response->throw();
 
             $proveedor = trim((string) $response->header('X-Jurissim-Evaluation-Provider', ''));
             $modelo = trim((string) $response->header('X-Jurissim-Evaluation-Model', ''));
-            if ($proveedor !== 'ollama' || $modelo === '' || mb_strlen($modelo, 'UTF-8') > 150) {
+            if ($proveedor !== ($reglada ? 'openai' : 'ollama') || $modelo === '' || mb_strlen($modelo, 'UTF-8') > 150) {
                 throw new UnexpectedValueException('El servicio local no confirmó el proveedor y modelo utilizados.');
             }
 
@@ -137,12 +169,12 @@ final class EvaluarSimulacion implements ShouldQueue
             }
 
             $resultado = $this->validarResultado($resultado, $criterios, $transcripcion);
-            $this->persistirResultado($evaluacion->getKey(), $datosPrevios, $rubrica, $resultado, $proveedor, $modelo);
+            $this->persistirResultado($evaluacion->getKey(), $datosPrevios, $rubrica, $resultado, $proveedor, $modelo, $reglada);
         } catch (Throwable $exception) {
             Evaluacion::query()->whereKey($this->evaluacionId)->where('estado', 'procesando')->update([
                 'datos_evaluacion' => array_merge(
                     is_array($evaluacion->datos_evaluacion) ? $evaluacion->datos_evaluacion : [],
-                    ['error' => 'No se pudo completar la evaluación local.'],
+                    ['error' => $reglada ? 'No se pudo completar la evaluación.' : 'No se pudo completar la evaluación local.'],
                 ),
             ]);
 
@@ -158,7 +190,8 @@ final class EvaluarSimulacion implements ShouldQueue
         }
 
         $datos = is_array($evaluacion->datos_evaluacion) ? $evaluacion->datos_evaluacion : [];
-        $datos['error'] = 'No se pudo completar la evaluación local.';
+        $reglada = ContextoEvaluacionReglada::query()->where('id_evaluacion', $evaluacion->getKey())->exists();
+        $datos['error'] = $reglada ? 'No se pudo completar la evaluación.' : 'No se pudo completar la evaluación local.';
         $evaluacion->update([
             'estado' => 'error',
             'datos_evaluacion' => $datos,
@@ -236,8 +269,9 @@ final class EvaluarSimulacion implements ShouldQueue
         array $resultado,
         string $proveedor,
         string $modelo,
+        bool $reglada = false,
     ): void {
-        DB::transaction(function () use ($evaluacionId, $datosPrevios, $rubrica, $resultado, $proveedor, $modelo): void {
+        DB::transaction(function () use ($evaluacionId, $datosPrevios, $rubrica, $resultado, $proveedor, $modelo, $reglada): void {
             $evaluacion = Evaluacion::query()->whereKey($evaluacionId)->lockForUpdate()->firstOrFail();
             if ($evaluacion->estado !== 'procesando') {
                 return;
@@ -253,8 +287,11 @@ final class EvaluarSimulacion implements ShouldQueue
             $fortalezas = [];
             $errores = [];
             $recomendaciones = [];
+            $criteriosEvaluados = [];
 
-            $evaluacion->resultados()->delete();
+            if (! $reglada) {
+                $evaluacion->resultados()->delete();
+            }
             foreach ($resultado['criteria'] as $criterioResultado) {
                 $criterio = $criterios->get((int) $criterioResultado['criterion_id']);
                 $puntajePonderado += ((float) $criterioResultado['score'] / (float) $criterio['max_score'])
@@ -263,13 +300,22 @@ final class EvaluarSimulacion implements ShouldQueue
                     ->pluck('evidence.quote')
                     ->implode("\n");
 
-                $evaluacion->resultados()->create([
-                    'id_rubrica' => $evaluacion->id_rubrica,
-                    'id_criterio' => (int) $criterioResultado['criterion_id'],
-                    'puntaje' => round((float) $criterioResultado['score'], 4),
-                    'comentario' => $criterioResultado['feedback'],
-                    'evidencia' => $evidencias === '' ? null : $evidencias,
-                ]);
+                if (! $reglada) {
+                    $evaluacion->resultados()->create([
+                        'id_rubrica' => $evaluacion->id_rubrica,
+                        'id_criterio' => (int) $criterioResultado['criterion_id'],
+                        'puntaje' => round((float) $criterioResultado['score'], 4),
+                        'comentario' => $criterioResultado['feedback'],
+                        'evidencia' => $evidencias === '' ? null : $evidencias,
+                    ]);
+                }
+                $criteriosEvaluados[] = [
+                    'criterion_id' => (int) $criterioResultado['criterion_id'],
+                    'name' => $criterio['name'], 'score' => (float) $criterioResultado['score'],
+                    'max_score' => (float) $criterio['max_score'], 'feedback' => $criterioResultado['feedback'],
+                    'strengths' => $criterioResultado['strengths'], 'errors' => $criterioResultado['errors'],
+                    'recommendations' => $criterioResultado['recommendations'],
+                ];
 
                 foreach ($criterioResultado['strengths'] as $punto) {
                     $fortalezas[] = [
@@ -303,6 +349,7 @@ final class EvaluarSimulacion implements ShouldQueue
                 'recommendations' => $recomendaciones,
                 'requires_human_review' => true,
                 'provider' => $proveedor,
+                ...($reglada ? ['criteria' => $criteriosEvaluados] : []),
             ]);
 
             $evaluacion->update([
@@ -318,8 +365,26 @@ final class EvaluarSimulacion implements ShouldQueue
         }, 3);
     }
 
+    private function huellaCanonica(array $valor): string
+    {
+        $ordenar = function (array $elementos) use (&$ordenar): array {
+            foreach ($elementos as $clave => $elemento) {
+                if (is_array($elemento)) {
+                    $elementos[$clave] = $ordenar($elemento);
+                }
+            }
+            if (! array_is_list($elementos)) {
+                ksort($elementos);
+            }
+
+            return $elementos;
+        };
+
+        return hash('sha256', json_encode($ordenar($valor), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+    }
+
     /** @param array<string, mixed> $payload */
-    private function requestEvaluation(array $payload): Response
+    private function requestEvaluation(array $payload, bool $reglada): Response
     {
         $url = (string) config('services.intelligence.url', '');
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
@@ -338,6 +403,8 @@ final class EvaluarSimulacion implements ShouldQueue
             ->timeout(max(1, (int) config('services.intelligence.timeout', 300)))
             ->withoutRedirecting()
             ->withToken($token)
-            ->post(rtrim($url, '/').'/api/v1/evaluations/evaluate', $payload);
+            ->post(rtrim($url, '/').($reglada
+                ? '/api/v1/evaluations/evaluate-reglada'
+                : '/api/v1/evaluations/evaluate'), $payload);
     }
 }

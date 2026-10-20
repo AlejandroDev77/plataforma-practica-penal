@@ -58,6 +58,17 @@
 .practica-reglada .simulation-message-content { font-size: 1rem; color: var(--practica-text); }
 .practica-reglada .simulation-message-heading { font-size: .9rem; }
 .practica-modal { display: grid; gap: 1.25rem; }
+.practica-evaluacion { display: grid; gap: var(--practica-gap); }
+.practica-evaluacion-solicitud, .practica-evaluacion-resultado { display: grid; gap: var(--practica-gap); }
+.practica-evaluacion-contexto { border: 1px solid var(--practica-border); border-radius: var(--practica-radius); padding-inline: var(--practica-inset); }
+.practica-evaluacion-contexto > div { padding-top: .75rem; }
+.practica-evaluacion-contexto ol { display: grid; gap: .8rem; padding-left: 1.5rem; }
+.practica-evaluacion-turno, .practica-evaluacion-criterio { min-width: 0; padding-block: .85rem; border-top: 1px solid var(--practica-border); }
+.practica-evaluacion-criterio > div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.practica-evaluacion-criterio blockquote small { display: block; color: var(--practica-muted); }
+.practica-evaluacion-puntaje { font-size: 1.15rem; font-weight: 700; }
+.practica-consentimiento-evaluacion { padding-block: .6rem; }
+.practica-evaluacion-solicitud > .btn { justify-self: start; }
 @media (max-width: 640px) {
   .practica-reglada { --practica-inset: 1rem; --practica-gap: 1rem; }
   .practica-subtitulo { flex-wrap: wrap; }
@@ -65,4 +76,7 @@
   .practica-busqueda { grid-template-columns: 1fr; }
   .practica-pie { align-items: stretch; flex-direction: column; }
   .practica-pie .btn, .practica-generacion > .btn, .practica-transicion > .btn, .practica-creacion .btn { width: 100%; justify-self: stretch; }
+  .practica-evaluacion-contexto { overflow-wrap: anywhere; }
+  .practica-evaluacion-criterio > div { align-items: start; flex-direction: column; gap: .25rem; }
+  .practica-evaluacion-solicitud > .btn { width: 100%; justify-self: stretch; }
 }

@@ -8,6 +8,7 @@ import { consultarActa, consultarBorrador, consultarProveedor, confirmarBorrador
 import { claveContexto, coincideTurno, explicarBloqueo, nombresEstado, nombresRol, prepararDefensa, prepararGeneracion, prepararMovimiento, type Borrador, type FuenteSeleccionable, type Orquestacion } from '../model/practica-reglada'
 import { useOrquestacion } from '../model/use-practicas'
 import { SelectorFuentes } from './SelectorFuentes'
+import { EvaluacionRegladaPanel } from './EvaluacionRegladaPanel'
 import '../practicas.css'
 
 export function PracticaRegladaPage({ id, consulta }: { id: number; consulta: Orquestacion }) {
@@ -37,6 +38,7 @@ export function PracticaRegladaPage({ id, consulta }: { id: number; consulta: Or
         {i.sources.length > 0 && <details className="simulation-citations"><summary>Consultar referencias ({i.sources.length})</summary>{i.sources.map(f => <div key={f.id}><strong>{f.source.title ?? 'Referencia registrada'}</strong><p>{f.source.locator}</p><blockquote>{f.excerpt}</blockquote></div>)}</details>}
       </article>)}
     </section>
+    {d.status === 'finalizada' && !orq.isError && <EvaluacionRegladaPanel id={id} />}
   </div>
 }
 function TurnoReglado({ id, d, consultando }: { id: number; d: Orquestacion; consultando: boolean }) {
