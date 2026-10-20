@@ -6,6 +6,8 @@ use LogicException;
 
 final class ContextoEvaluacionReglada extends ModeloDominio
 {
+    public const CREATED_AT = null;
+
     public const UPDATED_AT = null;
 
     protected $table = 'contextos_evaluacion_reglada';

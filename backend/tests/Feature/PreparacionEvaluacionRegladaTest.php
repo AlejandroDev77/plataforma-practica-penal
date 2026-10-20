@@ -197,7 +197,6 @@ class PreparacionEvaluacionRegladaTest extends TestCase
         Queue::assertNothingPushed();
         Http::assertNothingSent();
 
-        $this->withoutExceptionHandling();
         $respuestaHttp = $this->postJson($ruta, ['confirmar_envio' => true, 'huella_contexto' => $contexto['fingerprint']]);
         $this->assertSame(202, $respuestaHttp->status(), $respuestaHttp->getContent());
         $respuesta = $respuestaHttp->assertHeader('Cache-Control', 'no-store, private')->json('data');
