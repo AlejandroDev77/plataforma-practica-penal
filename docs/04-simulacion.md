@@ -15,6 +15,10 @@ La [capa interna de revisión jurídica](15-revision-juridica-reglas.md) registr
 
 `GET /api/v1/simulaciones/{simulacion}/orquestacion` centraliza etapa, turno, participante, consistencia del historial y motivos de bloqueo. Es una consulta del propietario sin generación ni avance. Distingue candidatos técnicos de acciones autorizadas: mientras no exista una aprobación jurídica verificable de la secuencia, devuelve `practice_ready=false`, `legal_review_status=no_acreditada` y `allowed_actions=[]`. No modifica las rutas de mutación existentes ni activa reglas. El [contrato y los límites de este hito](13-orquestacion-tecnica.md) detallan las verificaciones y el trabajo pendiente.
 
+## Procedimiento boliviano: primer paso del orquestador
+
+La [matriz cautelar boliviana](12-procedimiento-cautelar-bolivia.md) propone un debate por cuestiones y documenta las diferencias con la cadena actual por actores. Es un borrador no ejecutable, con revisión jurídica y vigencia pendientes; no activa turnos ni altera prácticas. Incluye un contrato documental inactivo y criterios de aceptación para la coordinación técnica posterior.
+
 ## Componentes
 
 ```text

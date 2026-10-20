@@ -1,0 +1,158 @@
+{
+  "version": "1.0",
+  "uso": "documentacion_no_ejecutable",
+  "jurisdiccion": "BO",
+  "escenario": "solicitud_fiscal_inicial_etapa_preparatoria",
+  "activo": false,
+  "revision_juridica": "pendiente",
+  "vigencia_normativa": "pendiente_cotejo_integral",
+  "revisor_juridico": null,
+  "fecha_aprobacion": null,
+  "fecha_investigacion": "2026-10-01",
+  "documento": "../12-procedimiento-cautelar-bolivia.md",
+  "criterio_participacion": "Las listas son participantes posibles, no presencia obligatoria universal. Resolver aplicabilidad mediante escenario revisado; no ocultar roles no soportados.",
+  "criterio_revision": "La revision de un borrador por el usuario no es aprobacion juridica del catalogo ni decision judicial real. El agente no se aprueba a si mismo.",
+  "fuentes": [
+    {
+      "id": "tsj-cautelares-2017",
+      "url": "https://tsj.bo/wp-content/uploads/2019/11/protocolo-de-direcci%C3%B3n-de-audiencias-de-medidas-cautelares-min.pdf",
+      "localizador": "capitulo 5, paginas impresas 47-64",
+      "consulta": "texto_extraido",
+      "alcance": "estructura_orientativa_historica"
+    },
+    {
+      "id": "eje-cautelares-2021",
+      "url": "https://backend.academico.eje.gob.bo/files/recursos/PROTOCOLO_DE_DIRECCION_DE_AUDIENCIA_DE_MEDIDAS_CAUTELARES_1.pdf",
+      "localizador": "laminas 13, 15, 28, 40-42",
+      "consulta": "texto_extraido",
+      "alcance": "formacion_no_consolidacion_vigente"
+    },
+    {
+      "id": "cpp-silep",
+      "url": "https://www.silep.gob.bo/api/v1/documento_actualizado/4311/pdf",
+      "localizador": "articulos 233 y 235 ter",
+      "consulta": "extractos_indexados_pdf_completo_pendiente",
+      "alcance": "cotejo_integral_y_vigencia_pendientes"
+    },
+    {
+      "id": "tsj-derechos-2023",
+      "url": "https://tsj.bo/wp-content/uploads/2023/12/PROTOCOLO.pdf",
+      "localizador": "pagina 64 y seccion II.1.4.4",
+      "consulta": "extractos_indexados_pdf_completo_pendiente",
+      "alcance": "requisitos_y_salvaguardas_a_revisar"
+    },
+    {
+      "id": "tsj-ogp",
+      "url": "https://tsj.bo/ogp/",
+      "localizador": "funciones y estructura organizacional",
+      "consulta": "pagina_oficial",
+      "alcance": "separacion_administrativa_jurisdiccional"
+    }
+  ],
+  "participantes": [
+    {"id": "juez", "turno_disponible_en_api": true},
+    {"id": "fiscal", "turno_disponible_en_api": true},
+    {"id": "abogado_defensor", "turno_disponible_en_api": true},
+    {"id": "imputado", "turno_disponible_en_api": false},
+    {"id": "victima", "turno_disponible_en_api": false},
+    {"id": "querellante", "turno_disponible_en_api": false},
+    {"id": "abogado_victima", "turno_disponible_en_api": false},
+    {"id": "interprete", "turno_disponible_en_api": false},
+    {"id": "personal_apoyo", "turno_disponible_en_api": false}
+  ],
+  "acciones_conceptuales": [
+    "comprobar_preparacion",
+    "identificar_participantes",
+    "explicar_objeto",
+    "plantear_cuestion_previa",
+    "fundamentar_solicitud",
+    "contradecir_solicitud",
+    "pedir_aclaracion",
+    "proponer_resolucion",
+    "revisar_resolucion",
+    "registrar_cierre"
+  ],
+  "etapas_propuestas": [
+    {
+      "id": "preparacion_tecnica",
+      "participantes": ["personal_apoyo"],
+      "acciones": ["comprobar_preparacion"],
+      "condiciones_tecnicas": ["analisis_aprobado", "reglas_revisadas", "escenario_soportado"],
+      "fuentes": ["tsj-ogp"],
+      "salidas_propuestas": ["instalacion"]
+    },
+    {
+      "id": "instalacion",
+      "participantes": ["juez", "fiscal", "abogado_defensor", "imputado", "victima", "querellante", "abogado_victima", "interprete"],
+      "acciones": ["identificar_participantes", "explicar_objeto", "pedir_aclaracion"],
+      "condiciones_tecnicas": ["participacion_necesaria_representada", "defensa_y_comprension_verificadas"],
+      "fuentes": ["tsj-cautelares-2017"],
+      "salidas_propuestas": ["cuestiones_previas"]
+    },
+    {
+      "id": "cuestiones_previas",
+      "participantes": ["juez", "fiscal", "abogado_defensor", "victima", "querellante", "abogado_victima"],
+      "acciones": ["plantear_cuestion_previa", "pedir_aclaracion"],
+      "condiciones_tecnicas": ["ausencia_o_tratamiento_explicito", "cuestion_no_soportada_bloquea", "ruta_justificada_y_revisada"],
+      "fuentes": ["tsj-cautelares-2017"],
+      "salidas_propuestas": ["materialidad_y_participacion", "resolucion"]
+    },
+    {
+      "id": "materialidad_y_participacion",
+      "participantes": ["juez", "fiscal", "abogado_defensor", "victima", "querellante", "abogado_victima"],
+      "acciones": ["fundamentar_solicitud", "contradecir_solicitud", "pedir_aclaracion"],
+      "condiciones_tecnicas": ["contradiccion_registrada", "ruta_justificada_y_revisada"],
+      "fuentes": ["tsj-cautelares-2017", "cpp-silep"],
+      "salidas_propuestas": ["riesgos_procesales", "resolucion"]
+    },
+    {
+      "id": "riesgos_procesales",
+      "participantes": ["juez", "fiscal", "abogado_defensor", "victima", "querellante", "abogado_victima"],
+      "acciones": ["fundamentar_solicitud", "contradecir_solicitud", "pedir_aclaracion"],
+      "condiciones_tecnicas": ["cada_riesgo_invocado_contradicho", "fuentes_verificadas", "ruta_justificada_y_revisada"],
+      "fuentes": ["cpp-silep", "eje-cautelares-2021"],
+      "salidas_propuestas": ["medida_y_duracion", "resolucion"]
+    },
+    {
+      "id": "medida_y_duracion",
+      "participantes": ["juez", "fiscal", "abogado_defensor", "victima", "querellante", "abogado_victima"],
+      "acciones": ["fundamentar_solicitud", "contradecir_solicitud", "pedir_aclaracion"],
+      "condiciones_tecnicas": ["alternativas_y_temporalidad_tratadas", "datos_exigibles_completos_o_bloqueo"],
+      "fuentes": ["cpp-silep", "tsj-derechos-2023"],
+      "salidas_propuestas": ["resolucion"]
+    },
+    {
+      "id": "resolucion",
+      "participantes": ["juez"],
+      "acciones": ["proponer_resolucion", "revisar_resolucion"],
+      "condiciones_tecnicas": ["fundamentos_y_fuentes_verificados", "revision_humana_registrada"],
+      "fuentes": ["cpp-silep", "tsj-derechos-2023"],
+      "salidas_propuestas": ["cierre_y_registro"]
+    },
+    {
+      "id": "cierre_y_registro",
+      "participantes": ["juez", "personal_apoyo"],
+      "acciones": ["registrar_cierre"],
+      "condiciones_tecnicas": ["resolucion_revisada", "acta_consistente", "comunicacion_registrada"],
+      "fuentes": ["tsj-cautelares-2017", "tsj-ogp"],
+      "salidas_propuestas": []
+    }
+  ],
+  "restricciones_tecnicas": [
+    "no_importar_como_catalogo_activo",
+    "no_trasladar_normas_extranjeras_sin_adaptacion_revisada",
+    "no_inventar_hechos_normas_participantes_ni_revision",
+    "no_equiparar_silencio_con_culpabilidad",
+    "no_ocultar_participantes_no_soportados",
+    "no_avanzar_sin_reglas_revisadas_ni_contradiccion",
+    "no_decidir_rutas_juridicas_automaticamente_con_llm",
+    "no_generar_registrar_y_avanzar_como_una_sola_operacion",
+    "no_fijar_plazos_por_defecto",
+    "no_equiparar_cierre_de_audiencia_con_fin_de_causa",
+    "no_enviar_contexto_externo_sin_autorizacion_especifica"
+  ],
+  "fuera_de_alcance": [
+    "cesacion", "ampliacion", "revocatoria", "juicio_oral", "apelacion",
+    "procedimientos_especiales", "activacion_juridica", "conexiones_sistemas_judiciales"
+  ]
+}
