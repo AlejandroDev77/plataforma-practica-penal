@@ -197,8 +197,9 @@ class PreparacionEvaluacionRegladaTest extends TestCase
         Queue::assertNothingPushed();
         Http::assertNothingSent();
 
-        $respuesta = $this->postJson($ruta, ['confirmar_envio' => true, 'huella_contexto' => $contexto['fingerprint']])
-            ->assertAccepted()->assertHeader('Cache-Control', 'no-store, private')->json('data');
+        $respuestaHttp = $this->postJson($ruta, ['confirmar_envio' => true, 'huella_contexto' => $contexto['fingerprint']]);
+        $this->assertSame(202, $respuestaHttp->status(), $respuestaHttp->getContent());
+        $respuesta = $respuestaHttp->assertHeader('Cache-Control', 'no-store, private')->json('data');
         $this->assertSame('pendiente', $respuesta['status']);
         $this->assertDatabaseHas('contextos_evaluacion_reglada', [
             'id_evaluacion' => $respuesta['id'], 'id_usuario_consentimiento' => $e['owner']->getKey(),

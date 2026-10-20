@@ -303,7 +303,9 @@ class RevisionRubricasTest extends TestCase
 
     public function test_rollback_vacio_y_reaplicacion_preservan_esquema_anterior(): void
     {
+        $contextos = require database_path('migrations/2026_10_20_000001_persistir_contextos_evaluacion_reglada.php');
         $activaciones = require database_path('migrations/2026_10_06_000002_activar_copias_rubricas.php');
+        $contextos->down();
         $activaciones->down();
         $migration = require database_path('migrations/2026_10_06_000001_versionar_revision_rubricas.php');
         $migration->down();
@@ -311,6 +313,7 @@ class RevisionRubricasTest extends TestCase
         $this->assertTrue(Schema::hasTable('rubricas'));
         $migration->up();
         $activaciones->up();
+        $contextos->up();
         $e = $this->datos();
         $this->assertSame('no_acreditada', $e['g']->estado($e['v']->getKey())['estado_revision']);
     }

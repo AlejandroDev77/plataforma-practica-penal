@@ -57,6 +57,7 @@ final class EvaluarSimulacion implements ShouldQueue
             return;
         }
 
+        $reglada = false;
         try {
             $simulacion = Simulacion::query()
                 ->with('tipoAudiencia')
@@ -173,7 +174,7 @@ final class EvaluarSimulacion implements ShouldQueue
             Evaluacion::query()->whereKey($this->evaluacionId)->where('estado', 'procesando')->update([
                 'datos_evaluacion' => array_merge(
                     is_array($evaluacion->datos_evaluacion) ? $evaluacion->datos_evaluacion : [],
-                    ['error' => 'No se pudo completar la evaluación.'],
+                    ['error' => $reglada ? 'No se pudo completar la evaluación.' : 'No se pudo completar la evaluación local.'],
                 ),
             ]);
 
@@ -189,7 +190,8 @@ final class EvaluarSimulacion implements ShouldQueue
         }
 
         $datos = is_array($evaluacion->datos_evaluacion) ? $evaluacion->datos_evaluacion : [];
-        $datos['error'] = 'No se pudo completar la evaluación.';
+        $reglada = ContextoEvaluacionReglada::query()->where('id_evaluacion', $evaluacion->getKey())->exists();
+        $datos['error'] = $reglada ? 'No se pudo completar la evaluación.' : 'No se pudo completar la evaluación local.';
         $evaluacion->update([
             'estado' => 'error',
             'datos_evaluacion' => $datos,
