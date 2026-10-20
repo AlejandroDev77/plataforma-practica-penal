@@ -11,6 +11,10 @@ El [sellado de versiones](14-versiones-reglas-audiencia.md) conserva tipo, etapa
 
 La [capa interna de revisión jurídica](15-revision-juridica-reglas.md) registra habilitaciones acotadas, decisiones sobre versiones exactas y revocaciones inmutables. No asigna roles ni habilita la ejecución del orquestador. La [API de gobierno de reglas](16-api-revision-reglas.md) expone esas operaciones con acceso por ámbito y precondiciones; la interfaz y la activación siguen siendo hitos separados. No se han concedido habilitaciones reales durante su implementación.
 
+## Coordinación técnica: consulta inicial
+
+`GET /api/v1/simulaciones/{simulacion}/orquestacion` centraliza etapa, turno, participante, consistencia del historial y motivos de bloqueo. Es una consulta del propietario sin generación ni avance. Distingue candidatos técnicos de acciones autorizadas: mientras no exista una aprobación jurídica verificable de la secuencia, devuelve `practice_ready=false`, `legal_review_status=no_acreditada` y `allowed_actions=[]`. No modifica las rutas de mutación existentes ni activa reglas. El [contrato y los límites de este hito](13-orquestacion-tecnica.md) detallan las verificaciones y el trabajo pendiente.
+
 ## Componentes
 
 ```text
